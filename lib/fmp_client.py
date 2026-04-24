@@ -10,6 +10,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 
+FMP_BASE_URL = "https://financialmodelingprep.com/stable"
+
+
 class FMPSettings(BaseSettings):
     fmp_api_key: str
 
@@ -42,7 +45,7 @@ async def _wait_for_rate_slot() -> None:
 class FMPClient:
     """Thin async wrapper for Financial Modeling Prep endpoints used by M1."""
 
-    def __init__(self, api_key: str | None = None, base_url: str = "https://financialmodelingprep.com/api/v3"):
+    def __init__(self, api_key: str | None = None, base_url: str = FMP_BASE_URL):
         self.api_key = api_key or FMPSettings().fmp_api_key
         self.base_url = base_url.rstrip("/")
         self._client = httpx.AsyncClient(base_url=self.base_url, timeout=httpx.Timeout(60.0))
@@ -74,15 +77,15 @@ class FMPClient:
         return response.json()
 
     async def get_profile(self, symbol: str) -> dict[str, Any]:
-        payload = await self._request(f"/profile/{symbol}")
+        payload = await self._request("/profile", params={"symbol": symbol})
         if isinstance(payload, list):
             return payload[0] if payload else {}
         return payload if isinstance(payload, dict) else {}
 
     async def get_historical(self, symbol: str, from_date: str, to_date: str) -> list[dict[str, Any]]:
         payload = await self._request(
-            f"/historical-price-full/{symbol}",
-            params={"from": from_date, "to": to_date},
+            "/historical-price-eod/full",
+            params={"symbol": symbol, "from": from_date, "to": to_date},
         )
         if isinstance(payload, dict):
             historical = payload.get("historical", [])
@@ -90,7 +93,7 @@ class FMPClient:
         return payload if isinstance(payload, list) else []
 
     async def get_etf_holdings(self, etf: str) -> list[dict[str, Any]]:
-        payload = await self._request(f"/etf-holdings/{etf}")
+        payload = await self._request("/etf/holdings", params={"symbol": etf})
         if isinstance(payload, dict):
             for key in ("holdings", "data", "historical"):
                 value = payload.get(key)
@@ -100,7 +103,7 @@ class FMPClient:
         return payload if isinstance(payload, list) else []
 
     async def get_etf_info(self, etf: str) -> dict[str, Any]:
-        payload = await self._request(f"/etf-info/{etf}")
+        payload = await self._request("/etf/info", params={"symbol": etf})
         if isinstance(payload, list):
             return payload[0] if payload else {}
         return payload if isinstance(payload, dict) else {}

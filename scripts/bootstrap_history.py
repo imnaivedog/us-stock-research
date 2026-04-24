@@ -143,7 +143,7 @@ def parse_date(value: Any) -> str | None:
 
 
 def holding_symbol(row: dict[str, Any]) -> str:
-    for key in ("symbol", "asset", "holdingSymbol", "ticker"):
+    for key in ("asset", "holdingSymbol", "ticker", "symbol"):
         symbol = normalize_symbol(row.get(key))
         if symbol:
             return symbol
@@ -159,7 +159,7 @@ def holding_weight(row: dict[str, Any]) -> float | None:
 
 
 def holding_as_of_date(row: dict[str, Any], fallback: str) -> str:
-    for key in ("date", "asOfDate", "as_of_date", "reportedDate"):
+    for key in ("date", "asOfDate", "as_of_date", "reportedDate", "updatedAt"):
         parsed = parse_date(row.get(key))
         if parsed:
             return parsed
