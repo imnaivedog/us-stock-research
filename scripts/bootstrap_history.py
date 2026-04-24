@@ -170,15 +170,24 @@ def load_etf_universe() -> pd.DataFrame:
     if not ETF_UNIVERSE_PATH.exists():
         raise FileNotFoundError("Run scripts/export_etf_audit.py before bootstrap_history.py")
     df = pd.read_csv(ETF_UNIVERSE_PATH, keep_default_na=False)
-    required = {"code", "algo_role"}
+    required = {"code", "algo_role", "is_candidate"}
     missing = required - set(df.columns)
     if missing:
         raise ValueError(f"config/etf_universe.csv missing columns: {sorted(missing)}")
     return df
 
 
+def _csv_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"true", "1", "yes", "y"}
+
+
 def get_loader_etfs(df: pd.DataFrame) -> list[str]:
-    codes = [normalize_symbol(code) for code in df.loc[df["algo_role"] == "universe_loader", "code"]]
+    loader_mask = (df["algo_role"].astype(str).str.strip() == "L1_loader") & df["is_candidate"].map(
+        _csv_bool
+    )
+    codes = [normalize_symbol(code) for code in df.loc[loader_mask, "code"]]
     ordered = [code for code in LOADER_PRIORITY if code in codes]
     if ordered != LOADER_PRIORITY:
         raise ValueError(f"Loader ETF set differs from expected: found {ordered}, expected {LOADER_PRIORITY}")
