@@ -1,1 +1,87 @@
 code,name,market,theme,gics_sector,is_candidate,algo_role,source_discovered,aum_billion,expense_ratio_pct,added_date,note
+AIQ,AI综合,美股,AI综合,Information Technology 科技,true,L3_theme_expand,notion_curation,,,,AI/机器人主题
+ARKF,ARK金融创新,美股,金融创新,Financials 金融;Information Technology 科技,true,L2_theme,notion_curation,,,,ARK Fintech Innovation
+ARKG,基因革命,美股,基因革命,Health Care 医疗,true,L3_theme_expand,notion_curation,,,,生物科技主题
+ARKK,ARK创新总,美股,创新破坏,Information Technology 科技,true,L2_theme,notion_curation,,,,ARK 旗舰创新
+ARKW,ARK互联网,美股,互联网创新,Communication Services 通信;Information Technology 科技,true,L2_theme,notion_curation,,,,ARK Next Gen Internet
+ARKX,太空探索,美股,太空探索,Industrials 工业,true,L3_theme_expand,notion_curation,,,,太空/国防
+BLOK,区块链综合,美股,区块链,Information Technology 科技;Financials 金融,true,L2_theme,notion_curation,,,,区块链生态公司
+BOTZ,AI机器人,美股,AI机器人,Information Technology 科技;Industrials 工业,true,L3_theme_expand,notion_curation,,,,AI/机器人主题
+CIBR,网络安全2,美股,网络安全,Information Technology 科技,true,L3_theme_expand,notion_curation,,,,网络安全主题
+COPX,铜矿,美股,铜矿,Materials 材料,true,L2_theme,notion_curation,,,,全球铜矿龙头
+DIA,道琼斯30,美股,大盘基准,,false,benchmark,notion_curation,,,,道琼斯 30 蓝筹基准
+DRIV,自动驾驶EV,美股,自动驾驶EV,Consumer Discretionary 可选消费;Information Technology 科技,true,L3_theme_expand,notion_curation,,,,AI/机器人主题
+EEM,新兴市场,美股,新兴市场,,true,L2_theme,notion_curation,,,,MSCI 新兴市场宽基
+ESPO,游戏电竞,美股,游戏电竞,Communication Services 通信,true,L2_theme,notion_curation,,,,游戏 + 电竞主题
+EWJ,日本股,美股,日本,,true,L2_theme,notion_curation,,,,MSCI 日本
+FDN,互联网基础,美股,互联网,Communication Services 通信;Consumer Discretionary 可选消费,true,L3_theme_expand,notion_curation,,,,互联网基础
+FINX,金融科技,美股,金融科技,Financials 金融;Information Technology 科技,true,L3_theme_expand,notion_curation,,,,金融科技主题
+FIW,水资源,美股,水资源,Utilities 公用事业;Industrials 工业,true,L2_theme,notion_curation,,,,水处理 + 水务
+FXI,中国大盘,美股,中国股,,true,L2_theme,notion_curation,,,,FTSE 中国 50 · 备选
+GDX,金矿龙头,美股,贵金属矿业,Materials 材料,true,L2_theme,notion_curation,,,,大金矿股龙头
+GDXJ,初级金矿,美股,贵金属矿业,Materials 材料,true,L2_theme,notion_curation,,,,小金矿高弹性 · 备选
+GLD,黄金,美股,宏观对冲,,false,macro_hedge,notion_curation,,,,宏观对冲不入算法 · 黄金避险
+HACK,网络安全,美股,网络安全,Information Technology 科技,true,L3_theme_expand,notion_curation,,,,网络安全主题
+HERO,视频游戏,美股,游戏电竞,Communication Services 通信,true,L2_theme,notion_curation,,,,视频游戏纯做 · 备选
+IBB,生物科技,美股,生物科技大盘,Health Care 医疗,true,L3_theme_expand,notion_curation,,,,生物科技主题
+IBIT,比特币现货,美股,加密货币,Financials 金融,true,L2_theme,notion_curation,,,,iShares 比特币现货 ETF
+ICLN,清洁能源,美股,清洁能源综合,Utilities 公用事业;Information Technology 科技,true,L3_theme_expand,notion_curation,,,,清洁能源主题
+IGV,企业软件,美股,企业软件,Information Technology 科技,true,L3_theme_expand,notion_curation,,,,软件/云计算
+IHI,医疗设备,美股,医疗设备,Health Care 医疗,true,L2_theme,notion_curation,,,,医疗器械龙头
+IJH,标普400中盘,美股,SP1500装载源,,true,L1_loader,notion_curation,,,,ADR-022 装载源 · SP400 中盘
+IJR,标普600小盘,美股,SP1500装载源,,true,L1_loader,notion_curation,,,,ADR-022 装载源 · SP600 小盘
+INDA,印度股,美股,印度,,true,L2_theme,notion_curation,,,,MSCI 印度
+IPO,Renaissance IPO,美股,IPO装载源,,true,L1_loader,notion_curation,,,,ADR-022 装载源 · Renaissance IPO ETF
+ITA,航空航天国防,美股,航空航天国防,Industrials 工业,true,L3_theme_expand,notion_curation,,,,太空/国防
+IVV,标普500核心,美股,SP1500装载源,,true,L1_loader,notion_curation,,,,ADR-022 装载源 · SP500 大盘
+IWD,罗素大盘价值,美股,价值style,,true,L2_theme,notion_curation,,,,Russell 1000 Value · Style
+IWF,罗素大盘成长,美股,成长style,,true,L2_theme,notion_curation,,,,Russell 1000 Growth · Style
+IWM,罗素2000,美股,大盘基准,,false,benchmark,notion_curation,,,,罗素 2000 小盘基准
+JETS,航空运输,美股,航空,Industrials 工业,true,L2_theme,notion_curation,,,,全球航空公司
+KBE,全银行,美股,银行,Financials 金融,true,L2_theme,notion_curation,,,,含大行 · 备选
+KRE,区域银行,美股,银行,Financials 金融,true,L2_theme,notion_curation,,,,区域银行龙头 · 利率敏感
+KWEB,中概互联,美股,中概,Communication Services 通信;Consumer Discretionary 可选消费,true,L2_theme,notion_curation,,,,中概互联龙头
+LIT,锂电池,美股,锂电池,Materials 材料,true,L3_theme_expand,notion_curation,,,,清洁能源主题
+MCHI,MSCI中国,美股,中国股,,true,L2_theme,notion_curation,,,,MSCI 中国宽基 · 备选
+METV,元宇宙,美股,元宇宙,Communication Services 通信;Information Technology 科技,true,L2_theme,notion_curation,,,,元宇宙生态
+MOO,农业,美股,农业,Materials 材料;Consumer Staples 必需消费,true,L2_theme,notion_curation,,,,全球农业综合
+NLR,核能基础设施,美股,核能基础设施,Utilities 公用事业,true,L3_theme_expand,notion_curation,,,,核能主题
+NOBL,股息贵族,美股,股息贵族,,true,L2_theme,notion_curation,,,,连续 25 年股息增长 · Factor
+NUKZ,核能文艺复兴,美股,核能基础设施,Utilities 公用事业,true,L3_theme_expand,notion_curation,,,,核能主题
+NXTG,5G基础设施,美股,5G基础设施,Communication Services 通信;Information Technology 科技,true,L3_theme_expand,notion_curation,,,,5G/光通信
+OIH,油田服务,美股,能源上游,Energy 能源,true,L2_theme,notion_curation,,,,油服 · 备选
+PAVE,美国基建,美股,基建,Industrials 工业,true,L2_theme,notion_curation,,,,美国基础设施受益
+QQQ,纳指100,美股,大盘基准,Information Technology 科技;Communication Services 通信;Consumer Discretionary 可选消费,true,L1_loader,notion_curation,,,,ADR-022 装载源 · NDX 100
+QTUM,量子计算,美股,量子计算,Information Technology 科技,true,L3_theme_expand,notion_curation,,,,量子计算主题
+REMX,稀土战略金属,美股,稀土,Materials 材料,true,L2_theme,notion_curation,,,,稀土 + 战略金属
+ROBO,机器人自动化,美股,AI机器人,Industrials 工业;Information Technology 科技,true,L3_theme_expand,notion_curation,,,,AI/机器人主题
+SCHD,高股息,美股,高股息,,true,L2_theme,notion_curation,,,,Schwab 高股息 · Factor
+SKYY,云基础设施,美股,云基础设施,Information Technology 科技,true,L3_theme_expand,notion_curation,,,,软件/云计算
+SLV,白银现货,美股,白银,Materials 材料,true,L2_theme,notion_curation,,,,白银现货 ETF
+SMH,芯片制造,美股,半导体,Information Technology 科技,true,L3_theme_expand,notion_curation,,,,半导体主题
+SOXX,半导体,美股,半导体,Information Technology 科技,true,L3_theme_expand,notion_curation,,,,半导体主题
+SPY,标普500,美股,大盘基准,,false,benchmark,notion_curation,,,,大盘参考
+TAN,太阳能,美股,太阳能,Information Technology 科技;Utilities 公用事业,true,L3_theme_expand,notion_curation,,,,清洁能源主题
+TLT,20+年国债,美股,宏观对冲,,false,macro_hedge,notion_curation,,,,宏观对冲不入算法 · 长债避险
+UFO,太空卫星,美股,太空卫星,Industrials 工业;Communication Services 通信,true,L3_theme_expand,notion_curation,,,,太空/国防
+URA,铀矿,美股,铀矿,Energy 能源;Materials 材料,true,L3_theme_expand,notion_curation,,,,核能主题
+UUP,美元指数,美股,宏观对冲,,false,macro_hedge,notion_curation,,,,宏观对冲不入算法 · 美元指数
+VIG,股息增长,美股,股息增长,,true,L2_theme,notion_curation,,,,连续 10 年股息增长 · Factor
+VNQ,REITs综合,美股,REITs,Real Estate 房地产,true,L2_theme,notion_curation,,,,美国 REITs 综合
+VTI,全市场,美股,大盘基准,,false,benchmark,notion_curation,,,,全市场 · 与 SPY 重叠度高
+WCLD,云计算,美股,云计算SaaS,Information Technology 科技,true,L3_theme_expand,notion_curation,,,,软件/云计算
+XAR,国防军工,美股,航空航天国防,Industrials 工业,true,L3_theme_expand,notion_curation,,,,太空/国防
+XBI,生物科技小盘,美股,生物科技小盘,Health Care 医疗,true,L3_theme_expand,notion_curation,,,,生物科技主题
+XHB,房屋建造,美股,建商,Consumer Discretionary 可选消费,true,L2_theme,notion_curation,,,,美国建商 + 建材
+XLB,材料,美股,GICS板块,Materials 材料,true,L2_theme,notion_curation,,,,GICS板块ETF
+XLC,通信服务,美股,GICS板块,Communication Services 通信,true,L2_theme,notion_curation,,,,GICS板块ETF
+XLE,能源,美股,GICS板块,Energy 能源,true,L2_theme,notion_curation,,,,GICS板块ETF
+XLF,金融,美股,GICS板块,Financials 金融,true,L2_theme,notion_curation,,,,GICS板块ETF
+XLI,工业,美股,GICS板块,Industrials 工业,true,L2_theme,notion_curation,,,,GICS板块ETF
+XLK,信息技术,美股,GICS板块,Information Technology 科技,true,L2_theme,notion_curation,,,,GICS板块ETF
+XLP,必需消费,美股,GICS板块,Consumer Staples 必需消费,true,L2_theme,notion_curation,,,,GICS板块ETF
+XLRE,房地产,美股,GICS板块,Real Estate 房地产,true,L2_theme,notion_curation,,,,GICS板块ETF
+XLU,公用事业,美股,GICS板块,Utilities 公用事业,true,L2_theme,notion_curation,,,,GICS板块ETF
+XLV,医疗保健,美股,GICS板块,Health Care 医疗,true,L2_theme,notion_curation,,,,GICS板块ETF
+XLY,可选消费,美股,GICS板块,Consumer Discretionary 可选消费,true,L2_theme,notion_curation,,,,GICS板块ETF
+XOP,油气勘探,美股,能源上游,Energy 能源,true,L2_theme,notion_curation,,,,油气勘探生产 E&P
