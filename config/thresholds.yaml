@@ -1,0 +1,21 @@
+universe_filter:
+  market_cap_min_usd: 1_000_000_000
+  avg_dollar_volume_20d_min_usd: 10_000_000
+  ipo_days_min: 90
+  must_be_actively_trading: true
+macro_symbols:
+  # FMP symbol codes
+  vix: "^VIX"
+  spy: "SPY"
+  qqq: "QQQ"
+  tlt: "TLT"
+  gld: "GLD"
+  uup: "UUP"
+  hyg: "HYG"
+  lqd: "LQD"
+  dxy: "^DXY"
+  wti: "CLUSD"       # fallback to USO if unavailable
+  btc: "BTCUSD"
+  ief: "IEF"         # 7-10y treasury proxy
+  us10y: "^TNX"      # for 10y-2y spread
+  us2y: "^FVX"       # 5y proxy; FMP Starter may not expose 2y directly
