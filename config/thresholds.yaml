@@ -13,9 +13,9 @@ macro_symbols:
   uup: "UUP"
   hyg: "HYG"
   lqd: "LQD"
-  dxy: "^DXY"
-  wti: "CLUSD"       # fallback to USO if unavailable
+  dxy: "UDN"         # DXY proxy; ^DXY is 402 on Starter, UUP is already tracked above
+  wti: "USO"         # WTI proxy; CLUSD is 402 on Starter
   btc: "BTCUSD"
   ief: "IEF"         # 7-10y treasury proxy
-  us10y: "^TNX"      # for 10y-2y spread
-  us2y: "^FVX"       # 5y proxy; FMP Starter may not expose 2y directly
+  us10y: "IEI"       # yield-curve proxy; ^TNX is 402 and TYX/DTYL returned no rows
+  us2y: "SHY"        # short-duration proxy; ^FVX is 402
