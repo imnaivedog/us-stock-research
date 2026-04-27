@@ -50,7 +50,7 @@ class FMPClient:
         self.base_url = base_url.rstrip("/")
         self._client = httpx.AsyncClient(base_url=self.base_url, timeout=httpx.Timeout(60.0))
 
-    async def __aenter__(self) -> "FMPClient":
+    async def __aenter__(self) -> FMPClient:
         return self
 
     async def __aexit__(self, *_exc: object) -> None:
@@ -90,6 +90,13 @@ class FMPClient:
         if isinstance(payload, dict):
             historical = payload.get("historical", [])
             return historical if isinstance(historical, list) else []
+        return payload if isinstance(payload, list) else []
+
+    async def get_treasury_rates(self, from_date: str, to_date: str) -> list[dict[str, Any]]:
+        payload = await self._request(
+            "/treasury-rates",
+            params={"from": from_date, "to": to_date},
+        )
         return payload if isinstance(payload, list) else []
 
     async def get_etf_holdings(self, etf: str) -> list[dict[str, Any]]:

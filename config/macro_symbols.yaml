@@ -10,6 +10,6 @@ lqd: "LQD"
 dxy: "UDN"         # DXY proxy; ^DXY is 402 on Starter, UUP is already tracked above.
 wti: "USO"         # WTI proxy; CLUSD is 402 on Starter.
 btc: "BTCUSD"
-ief: "IEF"         # 7-10y treasury proxy.
-us10y: "IEI"       # 3-7y yield-curve proxy; adjacent to IEF, not a duplicate holding.
-us2y: "SHY"        # short-duration proxy; ^FVX is 402.
+ief: "IEF"         # 7-10y treasury ETF price sentiment; not a 10Y yield proxy.
+us10y: "treasury_rates:year10"  # FMP treasury-rates 10Y yield.
+us2y: "treasury_rates:year2"    # FMP treasury-rates 2Y yield; used for spread_10y_2y.

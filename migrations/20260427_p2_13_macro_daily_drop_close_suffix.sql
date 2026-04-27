@@ -92,6 +92,13 @@ BEGIN
     ) THEN
         ALTER TABLE macro_daily RENAME COLUMN ief_close TO ief;
     END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'macro_daily' AND column_name = 'us10y'
+    ) THEN
+        ALTER TABLE macro_daily ADD COLUMN us10y NUMERIC(18,4);
+    END IF;
 END $$;
 
 COMMIT;
@@ -189,6 +196,13 @@ BEGIN
         WHERE table_name = 'macro_daily' AND column_name = 'ief_close'
     ) THEN
         ALTER TABLE macro_daily RENAME COLUMN ief TO ief_close;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'macro_daily' AND column_name = 'us10y'
+    ) THEN
+        ALTER TABLE macro_daily DROP COLUMN us10y;
     END IF;
 END $$;
 

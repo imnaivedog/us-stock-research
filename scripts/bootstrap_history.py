@@ -37,13 +37,14 @@ SNAPSHOTS_DIR = PROJECT_ROOT / "data" / "snapshots"
 BAD_ROWS_DIR = PROJECT_ROOT / "data" / "bad_rows"
 LOADER_PRIORITY = ["IVV", "IJH", "IJR", "QQQ", "IPO"]
 SOURCE_LABEL = {"QQQ": "QQQ_intl"}
-HOLDING_WEIGHT_MAX = 105.0
+HOLDING_WEIGHT_MAX = 1.05
 HOLDING_WEIGHT_KEYS = (
     "weight",
     "weightPercentage",
     "percentage",
     "weightPercentageOfNetAssets",
 )
+TREASURY_RATE_PREFIX = "treasury_rates:"
 MACRO_DB_COLUMNS = (
     "vix",
     "spy",
@@ -57,6 +58,7 @@ MACRO_DB_COLUMNS = (
     "wti",
     "btc",
     "ief",
+    "us10y",
 )
 
 
@@ -179,6 +181,8 @@ def holding_weight(row: dict[str, Any]) -> float | None:
     for key in HOLDING_WEIGHT_KEYS:
         value = parse_number(row.get(key))
         if value is not None:
+            if key != "weight":
+                return value / 100
             return value
     return None
 
@@ -459,6 +463,49 @@ def macro_rows_from_history(code: str, history: list[dict[str, Any]]) -> list[di
     return rows
 
 
+def macro_rows_from_treasury_rates(
+    code: str,
+    treasury_rates: list[dict[str, Any]],
+    field: str,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in treasury_rates:
+        trade_date = parse_date(item.get("date"))
+        if not trade_date:
+            continue
+        rows.append(
+            {"code": code, "trade_date": trade_date, "close": parse_number(item.get(field))}
+        )
+    return rows
+
+
+async def fetch_macro_rows(
+    client: FMPClient,
+    key: str,
+    source: str,
+    start_date: str,
+    end_date: str,
+) -> list[dict[str, Any]]:
+    if source.startswith(TREASURY_RATE_PREFIX):
+        field = source.removeprefix(TREASURY_RATE_PREFIX)
+        treasury_rates = await client.get_treasury_rates(start_date, end_date)
+        if not treasury_rates:
+            logger.warning(
+                "treasury rates returned no data; macro column will remain NULL",
+                key=key,
+                field=field,
+            )
+        return macro_rows_from_treasury_rates(key, treasury_rates, field)
+
+    history = await client.get_historical(source, start_date, end_date)
+    if key == "wti" and not history:
+        logger.warning("macro symbol returned no data; falling back to USO", key=key, symbol=source)
+        history = await client.get_historical("USO", start_date, end_date)
+    if not history:
+        logger.warning("macro symbol returned no data; macro column will remain NULL", key=key, symbol=source)
+    return macro_rows_from_history(key, history)
+
+
 def write_macro_parquet(run_dir: Path, code: str, rows: list[dict[str, Any]]) -> None:
     safe_code = code.replace("^", "").replace("/", "_")
     path = run_dir / "macro" / f"{safe_code}.parquet"
@@ -486,16 +533,10 @@ async def process_macro(
     checkpoint_path: Path,
     dry_run: bool,
 ) -> int:
-    for key, symbol in macro_symbols.items():
+    for key, source in macro_symbols.items():
         if key in checkpoint["macro"]:
             continue
-        history = await client.get_historical(symbol, start_date, end_date)
-        if key == "wti" and not history:
-            logger.warning("macro symbol returned no data; falling back to USO", key=key, symbol=symbol)
-            history = await client.get_historical("USO", start_date, end_date)
-        if not history:
-            logger.warning("macro symbol returned no data; macro column will remain NULL", key=key, symbol=symbol)
-        rows = macro_rows_from_history(key, history)
+        rows = await fetch_macro_rows(client, key, source, start_date, end_date)
         write_macro_parquet(run_dir, key, rows)
         checkpoint["macro"].append(key)
         save_checkpoint(checkpoint_path, checkpoint)
@@ -529,6 +570,7 @@ async def process_macro(
                 "wti",
                 "btc",
                 "ief",
+                "us10y",
                 "spread_10y_2y",
             ],
         )
