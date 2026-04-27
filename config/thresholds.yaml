@@ -3,3 +3,19 @@ universe_filter:
   avg_dollar_volume_20d_min_usd: 10_000_000
   ipo_days_min: 90
   must_be_actively_trading: true
+
+macro_symbols:
+  vix: "^VIX"
+  spy: "SPY"
+  qqq: "QQQ"
+  tlt: "TLT"
+  gld: "GLD"
+  uup: "UUP"
+  hyg: "HYG"
+  lqd: "LQD"
+  dxy: "UDN"
+  wti: "USO"
+  btc: "BTCUSD"
+  ief: "IEF"
+  us10y: "treasury_rates:year10"
+  us2y: "treasury_rates:year2"
