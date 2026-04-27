@@ -159,3 +159,62 @@ psql "host=127.0.0.1 port=5432 dbname=usstock user=postgres password=<POSTGRES_P
 ```
 
 The DDL uses `CREATE TABLE IF NOT EXISTS` and upsert-friendly primary keys.
+
+## Universe Curation Workflow
+
+M2-S1 adds a weekly universe curation job for `symbol_universe`. It runs every Monday at 09:00 Asia/Shanghai and keeps active membership aligned to:
+
+```text
+FMP /stable/stock-screener marketCapMoreThan=1000000000 and isActivelyTrading=true
+UNION
+watchlist symbols
+```
+
+The job records only membership flips in `symbol_universe_changes`. `first_seen` is set with `COALESCE(first_seen, CURRENT_DATE)` when a symbol enters and is never overwritten. `last_seen` is cleared when a symbol is active and set to `CURRENT_DATE` when it leaves. The current production schema uses `is_active`; no `track_code` column is added.
+
+Manual dry-run:
+
+```powershell
+$env:PYTHONPATH="src"
+uv run python -m us_stock.jobs.curate_universe --dry-run
+```
+
+Manual write run:
+
+```powershell
+$env:PYTHONPATH="src"
+uv run python -m us_stock.jobs.curate_universe
+```
+
+Apply the migration:
+
+```powershell
+psql "host=127.0.0.1 port=5432 dbname=usstock user=postgres password=<POSTGRES_PASSWORD>" -f sql/migrations/2026_04_27_add_universe_change_tracking.sql
+```
+
+Cloud Run and Scheduler specs are in:
+
+```text
+deploy/cloud_run_jobs.yaml
+deploy/cloud_scheduler.yaml
+```
+
+Deploy syntax check examples:
+
+```powershell
+gcloud run jobs replace deploy/cloud_run_jobs.yaml --region us-central1 --dry-run
+gcloud scheduler jobs describe curate-universe-weekly --location us-central1
+```
+
+Failure guards:
+
+- FMP screener failure or fewer than 500 rows exits before touching tables.
+- Final active count below 500 aborts the transaction.
+- Cloud SQL connection attempts are retried three times.
+- Job failures send a Discord alert when `DISCORD_WEBHOOK_URL` is provided.
+
+Rollback:
+
+```powershell
+# Run the migrate:down block in sql/migrations/2026_04_27_add_universe_change_tracking.sql
+```
