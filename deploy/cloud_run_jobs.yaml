@@ -58,6 +58,63 @@ spec:
 apiVersion: run.googleapis.com/v1
 kind: Job
 metadata:
+  name: etf-holdings-monthly-job
+  annotations:
+    run.googleapis.com/launch-stage: GA
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/max-retries: "3"
+    spec:
+      template:
+        spec:
+          serviceAccountName: cloud-run-sa@naive-usstock-live.iam.gserviceaccount.com
+          timeoutSeconds: 1800
+          containers:
+            - image: us-central1-docker.pkg.dev/naive-usstock-live/us-stock-repo/publisher:latest
+              command: ["python"]
+              args: ["-m", "us_stock.jobs.etf_holdings_monthly"]
+              env:
+                - name: PYTHONUNBUFFERED
+                  value: "1"
+                - name: PYTHONPATH
+                  value: "/app/src"
+                - name: GOOGLE_APPLICATION_CREDENTIALS
+                  value: ""
+                - name: GCP_PROJECT_ID
+                  value: naive-usstock-live
+                - name: POSTGRES_USER
+                  value: postgres
+                - name: POSTGRES_DB
+                  value: usstock
+                - name: POSTGRES_HOST
+                  value: 127.0.0.1
+                - name: POSTGRES_PORT
+                  value: "5432"
+                - name: FMP_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: fmp-key
+                      key: latest
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-password
+                      key: latest
+                - name: DISCORD_WEBHOOK_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: discord-webhook
+                      key: latest
+            - image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.4
+              args:
+                - "--port=5432"
+                - "naive-usstock-live:us-central1:naive-usstock-db"
+---
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
   name: macro-daily-job
   annotations:
     run.googleapis.com/launch-stage: GA
