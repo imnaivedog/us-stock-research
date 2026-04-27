@@ -65,6 +65,24 @@ CREATE TABLE IF NOT EXISTS symbol_universe (
     removed_date DATE,
     as_of_date DATE,
     filter_reason TEXT,
+    first_seen DATE,
+    last_seen DATE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_su_active ON symbol_universe(is_active);
+CREATE INDEX IF NOT EXISTS idx_su_last_seen ON symbol_universe(last_seen);
+
+CREATE TABLE IF NOT EXISTS symbol_universe_changes (
+    id BIGSERIAL PRIMARY KEY,
+    symbol VARCHAR NOT NULL REFERENCES symbol_universe(symbol),
+    change_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    change_type VARCHAR NOT NULL CHECK (change_type IN ('added','removed','forced_in')),
+    reason VARCHAR,
+    market_cap NUMERIC,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_suc_symbol ON symbol_universe_changes(symbol);
+CREATE INDEX IF NOT EXISTS idx_suc_date ON symbol_universe_changes(change_date);
