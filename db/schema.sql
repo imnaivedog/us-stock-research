@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS macro_daily (
     btc NUMERIC(18,4),
     ief NUMERIC(18,4),
     us10y NUMERIC(18,4),
+    us2y NUMERIC(18,4),
     spread_10y_2y NUMERIC(18,4),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

@@ -16,22 +16,31 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from lib.pg_client import PostgresClient  # noqa: E402
 
-
 DEFAULT_SYMBOLS_FILE = PROJECT_ROOT / "diagnostic_2026-04-25" / "missing_quotes_symbols.txt"
 DEFAULT_QUOTES_DIR = PROJECT_ROOT / "data" / "snapshots" / "bootstrap_2026-04-25" / "quotes"
 QUOTE_COLUMNS = ["symbol", "trade_date", "open", "high", "low", "close", "adj_close", "volume"]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Backfill quotes_daily from local parquet snapshots.")
+    parser = argparse.ArgumentParser(
+        description="Backfill quotes_daily from local parquet snapshots."
+    )
     parser.add_argument("--symbols-file", type=Path, default=DEFAULT_SYMBOLS_FILE)
     parser.add_argument("--quotes-dir", type=Path, default=DEFAULT_QUOTES_DIR)
-    parser.add_argument("--dry-run", action="store_true", help="Validate parquet files but skip DB writes.")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate parquet files but skip DB writes.",
+    )
     return parser.parse_args()
 
 
 def read_symbols(path: Path) -> list[str]:
-    return [line.strip().upper() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        line.strip().upper()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
 
 
 def none_if_missing(value: Any) -> Any:

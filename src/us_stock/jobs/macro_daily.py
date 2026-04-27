@@ -24,6 +24,7 @@ THRESHOLDS_PATH = PROJECT_ROOT / "config" / "thresholds.yaml"
 TREASURY_RATE_PREFIX = "treasury_rates:"
 ET_TZ = ZoneInfo("America/New_York")
 NULL_MAX_LOOKBACK_DAYS = 10
+TREASURY_LOOKBACK_DAYS = 14
 MACRO_DB_COLUMNS = (
     "vix",
     "spy",
@@ -38,6 +39,7 @@ MACRO_DB_COLUMNS = (
     "btc",
     "ief",
     "us10y",
+    "us2y",
     "spread_10y_2y",
 )
 
@@ -136,6 +138,12 @@ def build_macro_plan(last_trade_date: date | None, today_et: date) -> MacroPlan:
     )
 
 
+def source_start_date(source: str, incremental_start: date, end_date: date) -> date:
+    if source.startswith(TREASURY_RATE_PREFIX):
+        return end_date - timedelta(days=TREASURY_LOOKBACK_DAYS)
+    return incremental_start
+
+
 def rows_from_history(key: str, history: list[dict[str, Any]]) -> MacroSourceRows:
     rows: list[dict[str, Any]] = []
     for item in history:
@@ -172,6 +180,8 @@ async def fetch_macro_source(
     start_date: date,
     end_date: date,
 ) -> MacroSourceRows:
+    if start_date > end_date:
+        return MacroSourceRows(key=key, rows=[])
     start = start_date.isoformat()
     end = end_date.isoformat()
     if source.startswith(TREASURY_RATE_PREFIX):
@@ -197,7 +207,13 @@ async def fetch_all_macro_sources(
     async with FMPClient() as client:
         results = await asyncio.gather(
             *(
-                fetch_macro_source(client, key, source, start_date, end_date)
+                fetch_macro_source(
+                    client,
+                    key,
+                    source,
+                    source_start_date(source, start_date, end_date),
+                    end_date,
+                )
                 for key, source in macro_symbols.items()
             ),
             return_exceptions=True,
@@ -252,10 +268,14 @@ async def run_macro_daily(pg: PostgresClient, dry_run: bool = False) -> MacroRes
     plan = build_macro_plan(last_trade_date, today_et)
     logger.info(f"macro_daily last trade_date: {plan.last_trade_date}")
     logger.info(f"macro_daily fetch window: {plan.start_date} to {plan.end_date}")
+    logger.info(
+        "macro_daily treasury fetch window: "
+        f"{plan.end_date - timedelta(days=TREASURY_LOOKBACK_DAYS)} to {plan.end_date}"
+    )
     logger.info(f"macro_daily due calendar days: {plan.due_days}")
     logger.info(f"macro_daily source count: {len(macro_symbols)}")
 
-    if dry_run or plan.due_days == 0:
+    if dry_run:
         return MacroResult(
             last_trade_date=plan.last_trade_date,
             start_date=plan.start_date,
