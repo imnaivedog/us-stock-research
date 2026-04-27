@@ -1,0 +1,10 @@
+name: projects/naive-usstock-live/locations/us-central1/jobs/curate-universe-weekly
+description: Run curate-universe-job every Monday at 09:00 Asia/Shanghai.
+schedule: "0 9 * * 1"
+timeZone: Asia/Shanghai
+httpTarget:
+  uri: https://us-central1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/naive-usstock-live/jobs/curate-universe-job:run
+  httpMethod: POST
+  oauthToken:
+    serviceAccountEmail: scheduler-sa@naive-usstock-live.iam.gserviceaccount.com
+    scope: https://www.googleapis.com/auth/cloud-platform
