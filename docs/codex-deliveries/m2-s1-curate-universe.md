@@ -85,27 +85,27 @@ Command: `$env:PYTHONPATH='src'; uv run python -m us_stock.jobs.curate_universe 
 Before dev integration:
 
 ```text
-[INFO] FMP screener returned 5680 symbols (market_cap >= 1B)
+[INFO] FMP screener returned 2067 symbols (market_cap >= 1B)
 [INFO] Watchlist is empty; using market-cap rule only
-[INFO] Should-be-active universe size: 5680
+[INFO] Should-be-active universe size: 2067
 [INFO] Currently active: 1385
-[INFO] Diff: +4295 to_add (incl. 0 forced_in) / -0 to_remove / 1385 unchanged
-[INFO] Creating 4252 new symbols never seen before
-[INFO] Dry-run: 4295 added, 0 removed, 0 forced_in audit rows written
-[INFO] Final active count: 5680
+[INFO] Diff: +735 to_add (incl. 0 forced_in) / -53 to_remove / 1332 unchanged
+[INFO] Creating 735 new symbols never seen before
+[INFO] Dry-run: 735 added, 53 removed, 0 forced_in audit rows written
+[INFO] Final active count: 2067
 ```
 
 After dev integration:
 
 ```text
-[INFO] FMP screener returned 5680 symbols (market_cap >= 1B)
+[INFO] FMP screener returned 2067 symbols (market_cap >= 1B)
 [INFO] Watchlist is empty; using market-cap rule only
-[INFO] Should-be-active universe size: 5680
-[INFO] Currently active: 5680
-[INFO] Diff: +0 to_add (incl. 0 forced_in) / -0 to_remove / 5680 unchanged
+[INFO] Should-be-active universe size: 2067
+[INFO] Currently active: 2067
+[INFO] Diff: +0 to_add (incl. 0 forced_in) / -0 to_remove / 2067 unchanged
 [INFO] Creating 0 new symbols never seen before
 [INFO] Dry-run: 0 added, 0 removed, 0 forced_in audit rows written
-[INFO] Final active count: 5680
+[INFO] Final active count: 2067
 ```
 
 ### Pytest
@@ -153,14 +153,14 @@ Before:
 Run:
 
 ```text
-[INFO] FMP screener returned 5680 symbols (market_cap >= 1B)
+[INFO] FMP screener returned 2067 symbols (market_cap >= 1B)
 [INFO] Watchlist is empty; using market-cap rule only
-[INFO] Should-be-active universe size: 5680
+[INFO] Should-be-active universe size: 2067
 [INFO] Currently active: 1385
-[INFO] Diff: +4295 to_add (incl. 0 forced_in) / -0 to_remove / 1385 unchanged
-[INFO] Creating 4252 new symbols never seen before
-[INFO] Transaction committed: 4295 added, 0 removed, 0 forced_in audit rows written
-[INFO] Final active count: 5680
+[INFO] Diff: +735 to_add (incl. 0 forced_in) / -53 to_remove / 1332 unchanged
+[INFO] Creating 735 new symbols never seen before
+[INFO] Transaction committed: 735 added, 53 removed, 0 forced_in audit rows written
+[INFO] Final active count: 2067
 ```
 
 After:
@@ -168,12 +168,12 @@ After:
 ```text
  active_after_integration 
 --------------------------
-                     5680
+                     2067
 (1 row)
 
  audit_after_integration 
 -------------------------
-                    4295
+                     788
 (1 row)
 ```
 
@@ -182,16 +182,17 @@ Audit sample:
 ```text
  symbol | change_date | change_type |     reason     | market_cap  
 --------+-------------+-------------+----------------+-------------
- AADEX  | 2026-04-27  | added       | market_cap>=1B |  2992316359
- AAFTX  | 2026-04-27  | added       | market_cap>=1B | 52907581423
- AAGPX  | 2026-04-27  | added       | market_cap>=1B |  2991533639
- AAGTX  | 2026-04-27  | added       | market_cap>=1B | 49408770036
- AAHTX  | 2026-04-27  | added       | market_cap>=1B | 43169663617
+ AAOI   | 2026-04-27  | added       | market_cap>=1B | 12194989396
+ AAT    | 2026-04-27  | added       | market_cap>=1B |  1283683719
+ AB     | 2026-04-27  | added       | market_cap>=1B |  4291058064
+ ABTC   | 2026-04-27  | added       | market_cap>=1B |  1120016390
+ ABXL   | 2026-04-27  | added       | market_cap>=1B |  2515182117
 ```
 
 ## 📦 实施反馈
 
 - Existing schema uses `symbol_universe.is_active`, not `active`. I kept the existing column and created `idx_su_active ON symbol_universe(is_active)` instead of adding an `active` column.
 - Dev database does not currently have a `watchlist` table. The job treats missing `watchlist` as an empty watchlist and logs a warning; no watchlist DDL is added to this PR.
-- FMP stable screener endpoint that returned data was `/stable/company-screener`; `/stable/stock-screener` failed in dry-run. The job uses `company-screener` with `marketCapMoreThan`, `isActivelyTrading`, and `limit=10000`.
+- FMP stable screener endpoint that returned data was `/stable/company-screener`; `/stable/stock-screener` failed in dry-run. The job uses `company-screener` with `marketCapMoreThan`, `isActivelyTrading`, `isEtf=false`, `isFund=false`, `country=US`, `exchangeShortName=NASDAQ,NYSE,AMEX`, and `limit=10000`.
+- Initial dev integration without ETF/fund filters returned 5680 rows and included mutual funds. That run was rolled back with the requested 2026-04-27 audit/delete SQL, then rerun with the filtered screener.
 - Cloud Run/Scheduler YAML was parsed locally. The installed `gcloud run jobs replace` command did not support `--dry-run`, so no gcloud mutation command was run.

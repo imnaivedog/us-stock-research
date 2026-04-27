@@ -172,6 +172,8 @@ watchlist symbols
 
 The job records only membership flips in `symbol_universe_changes`. `first_seen` is set with `COALESCE(first_seen, CURRENT_DATE)` when a symbol enters and is never overwritten. `last_seen` is cleared when a symbol is active and set to `CURRENT_DATE` when it leaves. The current production schema uses `is_active`; no `track_code` column is added.
 
+The FMP screener is constrained to US common-stock venues only: `isEtf=false`, `isFund=false`, `country=US`, and `exchangeShortName=NASDAQ,NYSE,AMEX`. The job also applies the same ETF/fund/country/exchange filters defensively to the returned rows.
+
 Manual dry-run:
 
 ```powershell

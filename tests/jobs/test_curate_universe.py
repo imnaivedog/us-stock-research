@@ -80,6 +80,49 @@ def test_fmp_failure_floor_aborts(payload: list[dict[str, Any]]) -> None:
         asyncio.run(run())
 
 
+def test_fmp_screener_filters_etfs_and_funds() -> None:
+    payload = [
+        {
+            "symbol": "AAPL",
+            "companyName": "Apple Inc.",
+            "sector": "Technology",
+            "marketCap": 2_000_000_000,
+            "country": "US",
+            "exchangeShortName": "NASDAQ",
+            "isEtf": False,
+            "isFund": False,
+        },
+        {
+            "symbol": "SPY",
+            "companyName": "SPDR S&P 500 ETF Trust",
+            "sector": "ETF",
+            "marketCap": 2_000_000_000,
+            "country": "US",
+            "exchangeShortName": "AMEX",
+            "isEtf": True,
+            "isFund": False,
+        },
+        {
+            "symbol": "AADEX",
+            "companyName": "Mutual Fund",
+            "sector": "Financial Services",
+            "marketCap": 2_000_000_000,
+            "country": "US",
+            "exchangeShortName": "NASDAQ",
+            "isEtf": False,
+            "isFund": True,
+        },
+    ]
+    old_floor = job.MIN_FMP_ELIGIBLE_ROWS
+    job.MIN_FMP_ELIGIBLE_ROWS = 1
+    try:
+        members = asyncio.run(job.fetch_fmp_eligible(_FakeFMP(payload)))
+    finally:
+        job.MIN_FMP_ELIGIBLE_ROWS = old_floor
+
+    assert set(members) == {"AAPL"}
+
+
 def make_sqlite_conn():
     engine = create_engine(
         "sqlite+pysqlite://",

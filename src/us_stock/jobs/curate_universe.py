@@ -28,6 +28,7 @@ MIN_FMP_ELIGIBLE_ROWS = 500
 MIN_FINAL_ACTIVE_ROWS = 500
 LOCAL_TZ = ZoneInfo("Asia/Shanghai")
 DISCORD_WEBHOOK_ENV = "DISCORD_WEBHOOK_URL"
+ALLOWED_EXCHANGES = {"NASDAQ", "NYSE", "AMEX"}
 
 
 @dataclass(frozen=True)
@@ -94,6 +95,24 @@ def parse_market_cap(value: Any) -> Decimal | None:
         return Decimal(str(value).replace(",", "").strip())
     except Exception:
         return None
+
+
+def truthy(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "y"}
+
+
+def is_common_stock_candidate(item: dict[str, Any]) -> bool:
+    if truthy(item.get("isEtf")) or truthy(item.get("isFund")):
+        return False
+    country = str(item.get("country") or "").strip().upper()
+    if country and country != "US":
+        return False
+    exchange = str(
+        item.get("exchangeShortName") or item.get("exchange") or item.get("exchange_short_name") or ""
+    ).strip().upper()
+    return not exchange or exchange in ALLOWED_EXCHANGES
 
 
 def build_diff(snapshot: UniverseSnapshot) -> UniverseDiff:
@@ -351,6 +370,10 @@ async def fetch_fmp_eligible(client: FMPClient) -> dict[str, UniverseMember]:
         params={
             "marketCapMoreThan": MARKET_CAP_MIN,
             "isActivelyTrading": "true",
+            "isEtf": "false",
+            "isFund": "false",
+            "country": "US",
+            "exchangeShortName": ",".join(sorted(ALLOWED_EXCHANGES)),
             "limit": 10_000,
         },
     )
@@ -362,6 +385,8 @@ async def fetch_fmp_eligible(client: FMPClient) -> dict[str, UniverseMember]:
     members: dict[str, UniverseMember] = {}
     for item in payload:
         if not isinstance(item, dict):
+            continue
+        if not is_common_stock_candidate(item):
             continue
         symbol = normalize_symbol(item.get("symbol"))
         if not symbol:
