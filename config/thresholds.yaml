@@ -3,19 +3,3 @@ universe_filter:
   avg_dollar_volume_20d_min_usd: 10_000_000
   ipo_days_min: 90
   must_be_actively_trading: true
-macro_symbols:
-  # FMP symbol codes
-  vix: "^VIX"
-  spy: "SPY"
-  qqq: "QQQ"
-  tlt: "TLT"
-  gld: "GLD"
-  uup: "UUP"
-  hyg: "HYG"
-  lqd: "LQD"
-  dxy: "UDN"         # DXY proxy; ^DXY is 402 on Starter, UUP is already tracked above
-  wti: "USO"         # WTI proxy; CLUSD is 402 on Starter
-  btc: "BTCUSD"
-  ief: "IEF"         # 7-10y treasury proxy
-  us10y: "IEI"       # yield-curve proxy; ^TNX is 402 and TYX/DTYL returned no rows
-  us2y: "SHY"        # short-duration proxy; ^FVX is 402
