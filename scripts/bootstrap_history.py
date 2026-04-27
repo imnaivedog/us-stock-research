@@ -17,8 +17,8 @@ from typing import Any
 import pandas as pd
 import yaml
 from loguru import logger
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from psycopg.types.json import Jsonb
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -28,7 +28,6 @@ from data.universe_filter import async_filter_universe  # noqa: E402
 from lib.fmp_client import FMPClient  # noqa: E402
 from lib.gcs_client import upload_dir, upload_file  # noqa: E402
 from lib.pg_client import PostgresClient  # noqa: E402
-
 
 ETF_UNIVERSE_PATH = PROJECT_ROOT / "config" / "etf_universe.csv"
 THRESHOLDS_PATH = PROJECT_ROOT / "config" / "thresholds.yaml"
@@ -92,7 +91,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="M1 one-shot 5-year historical bootstrap.")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--resume", action="store_true", help="Reuse the newest existing checkpoint.")
-    mode.add_argument("--fresh", action="store_true", help="Wipe today's bootstrap snapshot and restart.")
+    mode.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Wipe today's bootstrap snapshot and restart.",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Skip DB writes.")
     parser.add_argument("--start-date", help="Override default start date of today minus 5 years.")
     return parser.parse_args()
@@ -237,7 +240,10 @@ def get_loader_etfs(df: pd.DataFrame) -> list[str]:
     codes = [normalize_symbol(code) for code in df.loc[loader_mask, "code"]]
     ordered = [code for code in LOADER_PRIORITY if code in codes]
     if ordered != LOADER_PRIORITY:
-        raise ValueError(f"Loader ETF set differs from expected: found {ordered}, expected {LOADER_PRIORITY}")
+        raise ValueError(
+            f"Loader ETF set differs from expected: found {ordered}, "
+            f"expected {LOADER_PRIORITY}"
+        )
     return ordered
 
 
@@ -304,7 +310,10 @@ async def build_symbol_universe(
                     "last_seen_date": as_of_date,
                     "as_of_date": as_of_date,
                 }
-            elif source != universe[symbol]["source"] and source not in universe[symbol]["source_secondary"]:
+            elif (
+                source != universe[symbol]["source"]
+                and source not in universe[symbol]["source_secondary"]
+            ):
                 universe[symbol]["source_secondary"].append(source)
     return universe, holdings_by_etf
 
@@ -459,7 +468,13 @@ def macro_rows_from_history(code: str, history: list[dict[str, Any]]) -> list[di
         trade_date = parse_date(item.get("date"))
         if not trade_date:
             continue
-        rows.append({"code": code, "trade_date": trade_date, "close": parse_number(item.get("adjClose") or item.get("close"))})
+        rows.append(
+            {
+                "code": code,
+                "trade_date": trade_date,
+                "close": parse_number(item.get("adjClose") or item.get("close")),
+            }
+        )
     return rows
 
 
@@ -502,7 +517,11 @@ async def fetch_macro_rows(
         logger.warning("macro symbol returned no data; falling back to USO", key=key, symbol=source)
         history = await client.get_historical("USO", start_date, end_date)
     if not history:
-        logger.warning("macro symbol returned no data; macro column will remain NULL", key=key, symbol=source)
+        logger.warning(
+            "macro symbol returned no data; macro column will remain NULL",
+            key=key,
+            symbol=source,
+        )
     return macro_rows_from_history(key, history)
 
 
