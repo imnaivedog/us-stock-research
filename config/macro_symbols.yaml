@@ -1,0 +1,15 @@
+# FMP symbol codes used by the M1 macro loader.
+vix: "^VIX"
+spy: "SPY"
+qqq: "QQQ"
+tlt: "TLT"
+gld: "GLD"
+uup: "UUP"
+hyg: "HYG"
+lqd: "LQD"
+dxy: "UDN"         # DXY proxy; ^DXY is 402 on Starter, UUP is already tracked above.
+wti: "USO"         # WTI proxy; CLUSD is 402 on Starter.
+btc: "BTCUSD"
+ief: "IEF"         # 7-10y treasury proxy.
+us10y: "IEI"       # 3-7y yield-curve proxy; adjacent to IEF, not a duplicate holding.
+us2y: "SHY"        # short-duration proxy; ^FVX is 402.

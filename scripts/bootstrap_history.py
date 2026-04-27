@@ -30,23 +30,24 @@ from lib.pg_client import PostgresClient  # noqa: E402
 
 ETF_UNIVERSE_PATH = PROJECT_ROOT / "config" / "etf_universe.csv"
 THRESHOLDS_PATH = PROJECT_ROOT / "config" / "thresholds.yaml"
+MACRO_SYMBOLS_PATH = PROJECT_ROOT / "config" / "macro_symbols.yaml"
 SNAPSHOTS_DIR = PROJECT_ROOT / "data" / "snapshots"
 LOADER_PRIORITY = ["IVV", "IJH", "IJR", "QQQ", "IPO"]
 SOURCE_LABEL = {"QQQ": "QQQ_intl"}
-MACRO_COLUMN_MAP = {
-    "vix": "vix",
-    "spy": "spy_close",
-    "qqq": "qqq_close",
-    "tlt": "tlt_close",
-    "gld": "gld_close",
-    "uup": "uup_close",
-    "hyg": "hyg_close",
-    "lqd": "lqd_close",
-    "dxy": "dxy",
-    "wti": "wti",
-    "btc": "btc_close",
-    "ief": "ief_close",
-}
+MACRO_DB_COLUMNS = (
+    "vix",
+    "spy",
+    "qqq",
+    "tlt",
+    "gld",
+    "uup",
+    "hyg",
+    "lqd",
+    "dxy",
+    "wti",
+    "btc",
+    "ief",
+)
 
 
 class BootstrapSettings(BaseSettings):
@@ -461,8 +462,8 @@ async def process_macro(
     macro_rows: list[dict[str, Any]] = []
     for trade_date, values in sorted(by_date.items()):
         row: dict[str, Any] = {"trade_date": trade_date}
-        for key, column in MACRO_COLUMN_MAP.items():
-            row[column] = values.get(key)
+        for column in MACRO_DB_COLUMNS:
+            row[column] = values.get(column)
         us10y = values.get("us10y")
         us2y = values.get("us2y")
         row["spread_10y_2y"] = None if us10y is None or us2y is None else us10y - us2y
@@ -475,17 +476,17 @@ async def process_macro(
             conflict_cols=["trade_date"],
             update_cols=[
                 "vix",
-                "spy_close",
-                "qqq_close",
-                "tlt_close",
-                "gld_close",
-                "uup_close",
-                "hyg_close",
-                "lqd_close",
+                "spy",
+                "qqq",
+                "tlt",
+                "gld",
+                "uup",
+                "hyg",
+                "lqd",
                 "dxy",
                 "wti",
-                "btc_close",
-                "ief_close",
+                "btc",
+                "ief",
                 "spread_10y_2y",
             ],
         )
@@ -629,12 +630,12 @@ async def async_main() -> None:
             args.dry_run,
         )
 
-        thresholds = load_yaml(THRESHOLDS_PATH)
+        macro_symbols = load_yaml(MACRO_SYMBOLS_PATH)
         macro_rows_written = await process_macro(
             fmp,
             pg,
             run_dir,
-            thresholds.get("macro_symbols", {}),
+            macro_symbols,
             start_date,
             end_date,
             checkpoint,
