@@ -3,12 +3,14 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import os
 import shutil
 import sys
 import time
 from collections import defaultdict
-from datetime import date, timedelta
+from dataclasses import dataclass
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +26,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from data.universe_filter import async_filter_universe  # noqa: E402
 from lib.fmp_client import FMPClient  # noqa: E402
-from lib.gcs_client import upload_dir  # noqa: E402
+from lib.gcs_client import upload_dir, upload_file  # noqa: E402
 from lib.pg_client import PostgresClient  # noqa: E402
 
 
@@ -32,8 +34,16 @@ ETF_UNIVERSE_PATH = PROJECT_ROOT / "config" / "etf_universe.csv"
 THRESHOLDS_PATH = PROJECT_ROOT / "config" / "thresholds.yaml"
 MACRO_SYMBOLS_PATH = PROJECT_ROOT / "config" / "macro_symbols.yaml"
 SNAPSHOTS_DIR = PROJECT_ROOT / "data" / "snapshots"
+BAD_ROWS_DIR = PROJECT_ROOT / "data" / "bad_rows"
 LOADER_PRIORITY = ["IVV", "IJH", "IJR", "QQQ", "IPO"]
 SOURCE_LABEL = {"QQQ": "QQQ_intl"}
+HOLDING_WEIGHT_MAX = 105.0
+HOLDING_WEIGHT_KEYS = (
+    "weight",
+    "weightPercentage",
+    "percentage",
+    "weightPercentageOfNetAssets",
+)
 MACRO_DB_COLUMNS = (
     "vix",
     "spy",
@@ -48,6 +58,20 @@ MACRO_DB_COLUMNS = (
     "btc",
     "ief",
 )
+
+
+@dataclass
+class ETFHoldingsLoadStats:
+    input_rows: int = 0
+    skipped_rows: int = 0
+    db_rows: int = 0
+
+    def as_dict(self) -> dict[str, int]:
+        return {
+            "input_rows": self.input_rows,
+            "skipped_rows": self.skipped_rows,
+            "db_rows": self.db_rows,
+        }
 
 
 class BootstrapSettings(BaseSettings):
@@ -152,10 +176,28 @@ def holding_symbol(row: dict[str, Any]) -> str:
 
 
 def holding_weight(row: dict[str, Any]) -> float | None:
-    for key in ("weight", "weightPercentage", "percentage", "weightPercentageOfNetAssets"):
+    for key in HOLDING_WEIGHT_KEYS:
         value = parse_number(row.get(key))
         if value is not None:
             return value
+    return None
+
+
+def raw_holding_weight(row: dict[str, Any]) -> Any:
+    for key in HOLDING_WEIGHT_KEYS:
+        value = row.get(key)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def bad_holding_weight_reason(weight: float | None) -> str | None:
+    if weight is None or (isinstance(weight, float) and math.isnan(weight)):
+        return "nan_weight"
+    if weight <= 0:
+        return "nonpositive_weight"
+    if weight > HOLDING_WEIGHT_MAX:
+        return "weight_overflow"
     return None
 
 
@@ -502,8 +544,10 @@ async def process_all_etf_holdings(
     checkpoint: dict[str, Any],
     checkpoint_path: Path,
     dry_run: bool,
-) -> int:
-    total_rows = 0
+) -> ETFHoldingsLoadStats:
+    stats = ETFHoldingsLoadStats()
+    bad_rows: list[dict[str, Any]] = []
+    loaded_at = datetime.now(UTC).isoformat()
     for etf in etf_codes:
         rows = await get_or_load_holdings(
             client,
@@ -513,16 +557,36 @@ async def process_all_etf_holdings(
             "etf_holdings_latest",
             checkpoint_path,
         )
-        db_rows = [
-            {
-                "etf_code": etf,
-                "symbol": holding_symbol(row),
-                "weight": holding_weight(row),
-                "as_of_date": holding_as_of_date(row, as_of_date),
-            }
-            for row in rows
-            if holding_symbol(row)
-        ]
+        stats.input_rows += len(rows)
+        db_rows: list[dict[str, Any]] = []
+        for row in rows:
+            symbol = holding_symbol(row)
+            if not symbol:
+                continue
+            weight = holding_weight(row)
+            reason = bad_holding_weight_reason(weight)
+            if reason:
+                stats.skipped_rows += 1
+                bad_row = dict(row)
+                bad_row["reason"] = reason
+                bad_row["loaded_at"] = loaded_at
+                bad_rows.append(bad_row)
+                logger.warning(
+                    "skipping ETF holding with bad weight",
+                    etf=etf,
+                    row_symbol=symbol,
+                    weight=raw_holding_weight(row),
+                    reason=reason,
+                )
+                continue
+            db_rows.append(
+                {
+                    "etf_code": etf,
+                    "symbol": symbol,
+                    "weight": weight,
+                    "as_of_date": holding_as_of_date(row, as_of_date),
+                }
+            )
         if not dry_run and pg and db_rows:
             pg.upsert(
                 "etf_holdings_latest",
@@ -530,8 +594,31 @@ async def process_all_etf_holdings(
                 conflict_cols=["etf_code", "symbol"],
                 update_cols=["weight", "as_of_date"],
             )
-        total_rows += len(db_rows)
-    return total_rows
+        stats.db_rows += len(db_rows)
+
+    if bad_rows:
+        local_bad_rows_path = BAD_ROWS_DIR / "etf_holdings" / f"{as_of_date}.csv"
+        local_bad_rows_path.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(bad_rows).to_csv(local_bad_rows_path, index=False)
+        bad_rows_gcs_uri = (
+            f"gs://{BootstrapSettings().gcs_bootstrap_bucket}"
+            f"/bad_rows/etf_holdings/{as_of_date}.csv"
+        )
+        try:
+            upload_file(local_bad_rows_path, bad_rows_gcs_uri)
+        except Exception as exc:
+            logger.warning(
+                "failed to upload ETF holdings bad rows",
+                gcs_uri=bad_rows_gcs_uri,
+                error=str(exc),
+            )
+        else:
+            logger.warning(
+                "uploaded ETF holdings bad rows",
+                gcs_uri=bad_rows_gcs_uri,
+                rows=len(bad_rows),
+            )
+    return stats
 
 
 def process_sp500_members(
@@ -643,7 +730,7 @@ async def async_main() -> None:
             args.dry_run,
         )
 
-        etf_holdings_rows = await process_all_etf_holdings(
+        etf_holdings_stats = await process_all_etf_holdings(
             fmp,
             pg,
             run_dir,
@@ -684,7 +771,7 @@ async def async_main() -> None:
         "inactive_symbols": inactive_count,
         "quote_rows_written_this_run": quote_rows_written,
         "macro_rows": macro_rows_written,
-        "etf_holdings_rows": etf_holdings_rows,
+        "etf_holdings": etf_holdings_stats.as_dict(),
         "sp500_rows": sp500_rows,
         "table_counts": counts,
         "elapsed_seconds": round(elapsed, 2),
