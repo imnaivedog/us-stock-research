@@ -94,3 +94,20 @@ def test_spread_is_null_when_either_treasury_leg_is_null() -> None:
 
     assert rows[0]["spread_10y_2y"] == pytest.approx(0.5)
     assert rows[1]["spread_10y_2y"] is None
+
+
+def test_all_null_macro_rows_are_not_written() -> None:
+    rows = macro_daily.build_macro_upsert_rows(
+        [
+            macro_daily.MacroSourceRows(
+                key="spy",
+                rows=[{"trade_date": date(2026, 4, 26), "value": None}],
+            ),
+            macro_daily.MacroSourceRows(
+                key="us10y",
+                rows=[{"trade_date": date(2026, 4, 26), "value": None}],
+            ),
+        ]
+    )
+
+    assert rows == []

@@ -246,8 +246,17 @@ def build_macro_upsert_rows(source_rows: list[MacroSourceRows]) -> list[dict[str
         us10y = values.get("us10y")
         us2y = values.get("us2y")
         row["spread_10y_2y"] = None if us10y is None or us2y is None else us10y - us2y
-        macro_rows.append(row)
+        if any(row.get(column) is not None for column in MACRO_DB_COLUMNS):
+            macro_rows.append(row)
     return macro_rows
+
+
+def delete_empty_macro_rows(pg: PostgresClient) -> int:
+    null_checks = " AND ".join(f"{column} IS NULL" for column in MACRO_DB_COLUMNS)
+    sql = text(f"DELETE FROM macro_daily WHERE {null_checks}")
+    with pg.engine.begin() as conn:
+        result = conn.execute(sql)
+    return int(result.rowcount or 0)
 
 
 def upsert_macro_rows(pg: PostgresClient, rows: list[dict[str, Any]]) -> None:
@@ -297,9 +306,11 @@ async def run_macro_daily(pg: PostgresClient, dry_run: bool = False) -> MacroRes
         raise RuntimeError("all macro sources returned no rows")
     rows = build_macro_upsert_rows(source_rows)
     upsert_macro_rows(pg, rows)
+    deleted_empty_rows = delete_empty_macro_rows(pg)
     logger.info(
         f"macro_daily completed: rows_written={len(rows)}, "
-        f"source_successes={success_count}, source_failures={len(failed_sources)}"
+        f"source_successes={success_count}, source_failures={len(failed_sources)}, "
+        f"deleted_empty_rows={deleted_empty_rows}"
     )
     return MacroResult(
         last_trade_date=plan.last_trade_date,
