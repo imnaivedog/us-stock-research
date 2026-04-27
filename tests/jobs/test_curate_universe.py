@@ -15,7 +15,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.us_stock.jobs import curate_universe as job
+from src.us_stock.jobs import curate_universe as job  # noqa: E402
 
 
 def member(symbol: str, market_cap: int = 2_000_000_000) -> job.UniverseMember:

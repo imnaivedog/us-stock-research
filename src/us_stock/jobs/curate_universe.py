@@ -22,7 +22,6 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 from lib.fmp_client import FMPClient
 from lib.pg_client import PostgresClient
 
-
 MARKET_CAP_MIN = 1_000_000_000
 MIN_FMP_ELIGIBLE_ROWS = 500
 MIN_FINAL_ACTIVE_ROWS = 500
@@ -79,7 +78,11 @@ def configure_logging() -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Curate weekly symbol_universe membership.")
-    parser.add_argument("--dry-run", action="store_true", help="Print the diff without writing tables.")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the diff without writing tables.",
+    )
     parser.add_argument("--no-alert", action="store_true", help="Disable Discord alert attempts.")
     return parser.parse_args()
 
@@ -109,9 +112,13 @@ def is_common_stock_candidate(item: dict[str, Any]) -> bool:
     country = str(item.get("country") or "").strip().upper()
     if country and country != "US":
         return False
-    exchange = str(
-        item.get("exchangeShortName") or item.get("exchange") or item.get("exchange_short_name") or ""
-    ).strip().upper()
+    exchange_value = (
+        item.get("exchangeShortName")
+        or item.get("exchange")
+        or item.get("exchange_short_name")
+        or ""
+    )
+    exchange = str(exchange_value).strip().upper()
     return not exchange or exchange in ALLOWED_EXCHANGES
 
 
@@ -479,8 +486,9 @@ async def run_curate_universe(
     log_plan(snapshot, diff)
     if dry_run:
         result = dry_run_result(snapshot, diff)
-        if result.final_active_count is not None and result.final_active_count < MIN_FINAL_ACTIVE_ROWS:
-            raise RuntimeError(f"final active count below safety floor: {result.final_active_count}")
+        final_active_count = result.final_active_count
+        if final_active_count is not None and final_active_count < MIN_FINAL_ACTIVE_ROWS:
+            raise RuntimeError(f"final active count below safety floor: {final_active_count}")
         return result
 
     with pg.engine.begin() as conn:
