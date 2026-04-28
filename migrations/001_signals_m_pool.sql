@@ -1,7 +1,7 @@
 -- migration: M3-S1 PR1
 -- desc: Create M-pool daily signal tables for market, sector, theme, and stock outputs.
 -- created: 2026-04-28
--- depends_on: 无
+-- depends_on: none
 
 CREATE TABLE IF NOT EXISTS signals_daily (
     trade_date DATE NOT NULL,
