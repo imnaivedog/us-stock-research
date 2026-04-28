@@ -1,0 +1,26 @@
+substitutions:
+  _REGION: us-central1
+  _IMAGE: us-central1-docker.pkg.dev/naive-usstock-live/us-stock-repo/publisher:latest
+
+steps:
+  - id: build-publisher
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_IMAGE}", "."]
+
+  - id: push-publisher
+    name: gcr.io/cloud-builders/docker
+    args: ["push", "${_IMAGE}"]
+
+  - id: deploy-compute-indicators
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - jobs
+      - replace
+      - deploy/cloud_run/compute-indicators-daily.yaml
+      - --region
+      - "${_REGION}"
+
+images:
+  - "${_IMAGE}"
