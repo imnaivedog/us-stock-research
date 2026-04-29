@@ -78,3 +78,84 @@ events:
     - NFP
     - ELECTION_PRESIDENTIAL
     - ELECTION_MIDTERM
+
+l3_sectors:
+  symbols:
+    - XLK
+    - XLF
+    - XLV
+    - XLY
+    - XLP
+    - XLI
+    - XLE
+    - XLU
+    - XLRE
+    - XLB
+    - XLC
+  score_weights:
+    trend: 0.25
+    rs: 0.25
+    breadth: 0.20
+    money_flow: 0.15
+    volatility: 0.15
+  relative:
+    leading_top: 2
+    strong_top: 4
+    neutral_top: 7
+    weak_top: 9
+  absolute_floor:
+    leading_min_p5y: 70
+    strong_min_p5y: 50
+    neutral_min_p5y: 30
+  multipliers:
+    LEADING: 1.10
+    STRONG: 1.05
+    NEUTRAL: 1.00
+    WEAK: 0.95
+    LAGGING: 0.90
+
+l4_themes:
+  basket_weights:
+    core: 0.70
+    diffusion: 0.30
+    concept: 0.00
+  state_machine:
+    incubating_to_launching:
+      core_rs_min_p5y: 70
+      market_volume_share_min_pct: 5
+      core_breakout_min_count: 3
+    launching_to_accelerating:
+      theme_rank_max: 3
+      core_50ma_above_min_pct: 80
+    accelerating_to_decaying:
+      volume_red_consec_no_high_days: 3
+      core_rs_below_p50_pct: 50
+  volume_alert:
+    yellow_pct_1y: 80
+    yellow_volume_ratio: 2.0
+    red_pct_1y: 95
+    red_volume_ratio: 3.0
+    min_theme_age_months: 6
+    fallback_age_min_months: 6
+
+l4_stocks:
+  total_score_weights:
+    technical: 0.60
+    fundamental: 0.25
+    theme_bonus: 0.15
+  technical_weights:
+    trend_strength: 0.30
+    momentum: 0.25
+    relative_strength: 0.25
+    volume_trend: 0.20
+  top_n: 5
+  entry:
+    breakout_high_window: 20
+    breakout_volume_multiplier: 1.5
+    pullback_to_ma50_tolerance_pct: 3
+    pullback_to_ma20_tolerance_pct: 2
+  fundamental_score_placeholder: 50
+  theme_bonus_map:
+    in_top3: 80
+    in_top4_to_8: 50
+    not_in_themes: 30

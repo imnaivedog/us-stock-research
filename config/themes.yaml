@@ -1,0 +1,49 @@
+themes:
+  - id: ai_compute
+    name: AI 算力
+    core: [NVDA, AVGO, AMD, MU]
+    diffusion: [VRT, SMCI, MRVL, DELL]
+    concept: []
+    inception_date: "2023-01-01"
+  - id: ai_application
+    name: AI 应用
+    core: [MSFT, META, GOOGL]
+    diffusion: [CRM, NOW]
+    concept: []
+    inception_date: "2023-01-01"
+  - id: defense_revival
+    name: 国防回归
+    core: [LMT, NOC, RTX]
+    diffusion: [GE, HII]
+    concept: []
+    inception_date: "2024-01-01"
+  - id: heavy_industry
+    name: 重工业回归
+    core: [CAT, DE, ETN]
+    diffusion: [URI, PWR]
+    concept: []
+    inception_date: "2024-01-01"
+  - id: nuclear_power
+    name: 核能复兴
+    core: [CCJ, VST, CEG]
+    diffusion: [NRG, CWEN]
+    concept: []
+    inception_date: "2024-06-01"
+  - id: glp1_obesity
+    name: 减肥药 GLP-1
+    core: [LLY, NVO, REGN]
+    diffusion: [VKTX]
+    concept: []
+    inception_date: "2023-06-01"
+  - id: crypto
+    name: 加密资产
+    core: [COIN]
+    diffusion: [MSTR, RIOT]
+    concept: []
+    inception_date: "2023-01-01"
+  - id: fintech
+    name: 金融科技
+    core: [V, MA, PYPL]
+    diffusion: [SQ, SOFI]
+    concept: []
+    inception_date: "2022-01-01"

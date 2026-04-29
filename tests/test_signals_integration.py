@@ -17,8 +17,8 @@ FIXTURE_DIR = Path("tests/fixtures")
 
 
 def test_fixture_backfill_produces_expected_regime_and_alert_profile() -> None:
-    spy, breadth, vix, events = load_fixture_context(FIXTURE_DIR)
-    rows, alerts = run_signal_engine(
+    spy, breadth, vix, events, sectors, stocks = load_fixture_context(FIXTURE_DIR)
+    rows, alerts, sector_rows, theme_rows, stock_rows = run_signal_engine(
         spy,
         breadth,
         vix,
@@ -26,6 +26,8 @@ def test_fixture_backfill_produces_expected_regime_and_alert_profile() -> None:
         date.fromisoformat("2025-04-29"),
         date.fromisoformat("2026-04-15"),
         load_params(),
+        sectors=sectors,
+        stocks=stocks,
     )
     signals = pd.DataFrame(rows)
     assert len(signals) == 252
@@ -37,6 +39,13 @@ def test_fixture_backfill_produces_expected_regime_and_alert_profile() -> None:
     ) >= 3
     assert any(alert.alert_type == "NH_NL_EXTREME" for alert in alerts)
     assert not any(alert.alert_type == "ZWEIG_BREADTH_THRUST" for alert in alerts)
+    assert len(sector_rows) == 252 * 11
+    assert len(theme_rows) == 252 * 8
+    assert len(stock_rows) == 252 * 30
+    assert sum(item.quadrant == "LEADING" for item in sector_rows) >= 30
+    assert sum(item.quadrant == "LAGGING" for item in sector_rows) >= 30
+    assert sum(item.theme_id == "ai_compute" and item.rank <= 3 for item in theme_rows) >= 120
+    assert sum(item.symbol == "NVDA" and item.is_top5 for item in stock_rows) >= 120
 
 
 def test_no_forbidden_table_access() -> None:
