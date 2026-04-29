@@ -1,0 +1,1 @@
+"""A-pool signal functions."""
