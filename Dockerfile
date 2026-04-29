@@ -14,3 +14,5 @@ RUN uv sync --frozen --no-dev
 COPY . .
 
 CMD ["uv", "run", "python", "scripts/bootstrap_history.py", "--dry-run"]
+
+ENV PATH="/app/.venv/bin:$PATH"
