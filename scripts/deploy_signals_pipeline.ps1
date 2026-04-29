@@ -121,6 +121,17 @@ try {
         }
     }
 
+    Write-Step "Configuring database environment for local Python tools"
+    if ($DryRun) {
+        Write-Host "[DRYRUN] set POSTGRES_HOST/PORT/USER/DB/PASSWORD from script DB settings"
+    } else {
+        $env:POSTGRES_HOST = $DbHost
+        $env:POSTGRES_PORT = $DbPort
+        $env:POSTGRES_USER = $DbUser
+        $env:POSTGRES_DB = $DbName
+        $env:POSTGRES_PASSWORD = $env:PGPASSWORD
+    }
+
     $migrations = @(
         "db/migrations/003_create_daily_indicators.sql",
         "db/migrations/004_create_signals_l1_l2.sql",
