@@ -5,6 +5,7 @@ description = "Analytics layer for the personal US stock research system."
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "loguru==0.7.2",
+  "mcp>=1.0.0",
   "numpy>=2.0.0",
   "pandas==2.3.3",
   "psycopg[binary]==3.2.3",
