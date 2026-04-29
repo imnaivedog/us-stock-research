@@ -1,0 +1,1 @@
+"""Discord report delivery."""

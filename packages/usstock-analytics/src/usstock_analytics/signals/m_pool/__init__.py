@@ -1,0 +1,1 @@
+"""M-pool signal engine."""
