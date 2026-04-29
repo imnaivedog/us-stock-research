@@ -7,7 +7,7 @@ import argparse
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="usstock-analytics")
-    parser.add_argument("command", choices=["signals", "backtest"])
+    parser.add_argument("command", choices=["signals", "backtest", "themes-score"])
     parser.add_argument("args", nargs=argparse.REMAINDER)
     args = parser.parse_args(argv)
     if args.command == "signals":
@@ -18,6 +18,10 @@ def main(argv: list[str] | None = None) -> int:
         from usstock_analytics.backtest.cli import main as backtest_main
 
         return backtest_main(args.args)
+    if args.command == "themes-score":
+        from usstock_analytics.themes.score import main as themes_score_main
+
+        return themes_score_main(args.args)
     parser.error("unknown command")
     return 2
 

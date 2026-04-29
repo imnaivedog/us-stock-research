@@ -43,14 +43,15 @@ def load_themes(path: Path | str = Path("config/themes.yaml")) -> list[ThemeConf
     payload = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     themes = []
     for item in payload.get("themes", []):
+        members = [member["symbol"] for member in item.get("members", [])]
         themes.append(
             ThemeConfig(
-                id=str(item["id"]),
-                name=str(item["name"]),
-                core=[str(symbol) for symbol in item.get("core", [])],
-                diffusion=[str(symbol) for symbol in item.get("diffusion", [])],
+                id=str(item.get("theme_id") or item["id"]),
+                name=str(item.get("name_cn") or item.get("name") or item.get("name_en")),
+                core=[str(symbol) for symbol in item.get("core", members[:3])],
+                diffusion=[str(symbol) for symbol in item.get("diffusion", members[3:])],
                 concept=[str(symbol) for symbol in item.get("concept", [])],
-                inception_date=date.fromisoformat(str(item["inception_date"])),
+                inception_date=date.fromisoformat(str(item.get("inception_date", "2024-01-01"))),
             )
         )
     return themes

@@ -159,3 +159,10 @@ l4_stocks:
     in_top3: 80
     in_top4_to_8: 50
     not_in_themes: 30
+
+themes_score:
+  min_members: 5
+  weights:
+    ret_5d: 0.20
+    ret_20d: 0.50
+    ret_60d: 0.30
