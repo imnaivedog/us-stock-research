@@ -10,9 +10,9 @@ from sqlalchemy import text
 
 from lib.pg_client import PostgresClient
 
-MACRO_TARGETS = ["TLT", "IEF", "HYG", "LQD", "UUP", "GLD", "SLV", "DBC", "VIXY"]
+BENCHMARK_SYMBOL = "SPY"
 DEFENSIVE = {"TLT", "GLD", "UUP", "VIXY"}
-OFFENSIVE = {"SPY", "HYG", "LQD"}
+OFFENSIVE = {BENCHMARK_SYMBOL, "HYG", "LQD"}
 
 
 @dataclass(frozen=True)
@@ -28,7 +28,7 @@ def load_macro_symbols(path: Path | str = Path("config/etf_universe.csv")) -> li
         for row in csv.DictReader(handle):
             if row.get("algo_role") == "macro_hedge" and row.get("code"):
                 symbols.append(row["code"].strip().upper())
-    merged = [*symbols, *MACRO_TARGETS, "SPY"]
+    merged = [*symbols, BENCHMARK_SYMBOL]
     return sorted({symbol for symbol in merged if symbol})
 
 
