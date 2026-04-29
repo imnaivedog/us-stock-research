@@ -7,13 +7,15 @@ import sys
 import time
 import traceback
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
 import httpx
+import yaml
 from loguru import logger
 from sqlalchemy import bindparam, text
 from sqlalchemy.engine import Connection
@@ -28,6 +30,7 @@ MIN_FINAL_ACTIVE_ROWS = 500
 LOCAL_TZ = ZoneInfo("Asia/Shanghai")
 DISCORD_WEBHOOK_ENV = "DISCORD_WEBHOOK_URL"
 ALLOWED_EXCHANGES = {"NASDAQ", "NYSE", "AMEX"}
+THRESHOLDS_PATH = Path(__file__).resolve().parents[3] / "config" / "thresholds.yaml"
 
 
 @dataclass(frozen=True)
@@ -36,6 +39,8 @@ class UniverseMember:
     market_cap: Decimal | None = None
     name: str | None = None
     sector: str | None = None
+    source: str = "fmp_screener"
+    filter_reason: str = "pending_curation"
 
 
 @dataclass(frozen=True)
@@ -44,6 +49,7 @@ class UniverseSnapshot:
     watchlist_symbols: set[str]
     current_active: set[str]
     all_known: set[str]
+    etf_symbols: frozenset[str] = field(default_factory=frozenset)
 
 
 @dataclass(frozen=True)
@@ -91,6 +97,12 @@ def normalize_symbol(value: Any) -> str:
     return str(value or "").strip().upper().replace(".", "-")
 
 
+def load_etf_universe(path: Path = THRESHOLDS_PATH) -> set[str]:
+    payload = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    items = payload.get("etf_universe") or []
+    return {normalize_symbol(symbol) for symbol in items if symbol}
+
+
 def parse_market_cap(value: Any) -> Decimal | None:
     if value in (None, ""):
         return None
@@ -123,10 +135,14 @@ def is_common_stock_candidate(item: dict[str, Any]) -> bool:
 
 
 def build_diff(snapshot: UniverseSnapshot) -> UniverseDiff:
-    should_be_active = set(snapshot.fmp_eligible) | snapshot.watchlist_symbols
+    should_be_active = (
+        set(snapshot.fmp_eligible) | snapshot.watchlist_symbols | set(snapshot.etf_symbols)
+    )
     to_add = should_be_active - snapshot.current_active
     to_remove = snapshot.current_active - should_be_active
-    forced_in = (snapshot.watchlist_symbols & to_add) - set(snapshot.fmp_eligible)
+    forced_in = ((snapshot.watchlist_symbols | set(snapshot.etf_symbols)) & to_add) - set(
+        snapshot.fmp_eligible
+    )
     to_create = should_be_active - snapshot.all_known
     return UniverseDiff(
         should_be_active=should_be_active,
@@ -141,6 +157,7 @@ def audit_rows_for_diff(
     diff: UniverseDiff,
     fmp_eligible: dict[str, UniverseMember],
     today: date,
+    etf_symbols: frozenset[str] = frozenset(),
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for symbol in sorted(diff.to_add - diff.forced_in):
@@ -154,12 +171,13 @@ def audit_rows_for_diff(
             }
         )
     for symbol in sorted(diff.forced_in):
+        reason = "etf_universe" if symbol in etf_symbols else "watchlist"
         rows.append(
             {
                 "symbol": symbol,
                 "change_date": today,
                 "change_type": "forced_in",
-                "reason": "watchlist",
+                "reason": reason,
                 "market_cap": fmp_eligible.get(symbol, UniverseMember(symbol)).market_cap,
             }
         )
@@ -196,13 +214,13 @@ def insert_new_symbols(
     rows = [
         {
             "symbol": member.symbol,
-            "source": "fmp_screener",
+            "source": member.source,
             "is_candidate": True,
             "is_active": False,
             "market_cap": member.market_cap,
             "added_date": today,
             "as_of_date": today,
-            "filter_reason": "pending_curation",
+            "filter_reason": member.filter_reason,
         }
         for member in members
     ]
@@ -300,19 +318,33 @@ def apply_diff(
     diff: UniverseDiff,
     today: date,
 ) -> CurateResult:
+    fmp_symbols = set(snapshot.fmp_eligible)
+    new_etf_symbols = sorted(set(snapshot.etf_symbols) & diff.to_create - fmp_symbols)
     create_members = [
         snapshot.fmp_eligible[symbol]
         for symbol in sorted(diff.to_create)
         if symbol in snapshot.fmp_eligible
     ]
-    missing_profile_symbols = sorted(diff.to_create - set(snapshot.fmp_eligible))
+    create_members.extend(
+        UniverseMember(
+            symbol=symbol,
+            name=symbol,
+            sector="ETF",
+            source="etf_universe",
+            filter_reason="etf_universe",
+        )
+        for symbol in new_etf_symbols
+    )
+    missing_profile_symbols = sorted(
+        diff.to_create - fmp_symbols - set(snapshot.etf_symbols)
+    )
     for symbol in missing_profile_symbols:
         logger.warning(f"Skipping {symbol}: missing sector/name field")
 
     created = insert_new_symbols(conn, create_members, today)
     added = update_added_symbols(conn, diff.to_add, today)
     removed = update_removed_symbols(conn, diff.to_remove, today)
-    audit_rows = audit_rows_for_diff(diff, snapshot.fmp_eligible, today)
+    audit_rows = audit_rows_for_diff(diff, snapshot.fmp_eligible, today, snapshot.etf_symbols)
     audit_count = insert_audit_rows(conn, audit_rows)
     final_active_count = conn.execute(
         text("SELECT COUNT(*) FROM symbol_universe WHERE is_active IS TRUE")
@@ -347,6 +379,7 @@ def dry_run_result(snapshot: UniverseSnapshot, diff: UniverseDiff) -> CurateResu
 
 def log_plan(snapshot: UniverseSnapshot, diff: UniverseDiff) -> None:
     logger.info(f"FMP screener returned {len(snapshot.fmp_eligible)} symbols (market_cap >= 1B)")
+    logger.info(f"ETF universe contains {len(snapshot.etf_symbols)} symbols")
     if snapshot.watchlist_symbols:
         logger.info(f"Watchlist contains {len(snapshot.watchlist_symbols)} symbols")
     else:
@@ -434,12 +467,14 @@ def load_db_snapshot(pg: PostgresClient) -> tuple[set[str], set[str], set[str]]:
 
 async def build_snapshot(pg: PostgresClient, client: FMPClient) -> UniverseSnapshot:
     fmp_eligible = await fetch_fmp_eligible(client)
+    etf_symbols = frozenset(load_etf_universe())
     watchlist_symbols, current_active, all_known = load_db_snapshot(pg)
     return UniverseSnapshot(
         fmp_eligible=fmp_eligible,
         watchlist_symbols={normalize_symbol(symbol) for symbol in watchlist_symbols},
         current_active={normalize_symbol(symbol) for symbol in current_active},
         all_known={normalize_symbol(symbol) for symbol in all_known},
+        etf_symbols=etf_symbols,
     )
 
 
