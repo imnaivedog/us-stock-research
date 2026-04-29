@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import UTC, date, datetime
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
 from loguru import logger
+from sqlalchemy import text
 
 from lib.pg_client import PostgresClient
 from scripts.run_signals import (
@@ -23,25 +24,37 @@ from src.signals.macro import compute_macro_state, run_macro, upsert_macro_state
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Orchestrate daily M-pool signal stages.")
-    parser.add_argument("--date", help="Single trade date, YYYY-MM-DD. Defaults to today UTC.")
+    parser.add_argument("--as-of", help="Single trade date, YYYY-MM-DD.")
+    parser.add_argument("--date", help="Deprecated alias for --as-of, YYYY-MM-DD.")
     parser.add_argument("--start", help="Backtest start date, YYYY-MM-DD.")
     parser.add_argument("--end", help="Backtest end date, YYYY-MM-DD.")
     parser.add_argument("--fixture-dir", help="Optional deterministic fixture directory.")
     return parser.parse_args()
 
 
-def date_range(args: argparse.Namespace) -> tuple[date, date]:
-    if args.date:
-        day = date.fromisoformat(args.date)
-        return day, day
+def max_quotes_trade_date(pg: PostgresClient) -> date:
+    with pg.engine.begin() as conn:
+        value = conn.execute(text("SELECT MAX(trade_date) FROM quotes_daily")).scalar_one()
+    if value is None:
+        raise ValueError("quotes_daily has no trade_date rows; cannot resolve target_date")
+    return value
+
+
+def date_range(args: argparse.Namespace, pg: PostgresClient) -> tuple[date, date, str]:
+    as_of = args.as_of or args.date
+    if as_of:
+        day = date.fromisoformat(as_of)
+        return day, day, "arg"
     if args.start and args.end:
         start = date.fromisoformat(args.start)
         end = date.fromisoformat(args.end)
         if start > end:
             raise ValueError("--start must be <= --end")
-        return start, end
-    today = datetime.now(UTC).date()
-    return today, today
+        return start, end, "arg"
+    if args.start or args.end:
+        raise ValueError("--start and --end must be provided together")
+    target_date = max_quotes_trade_date(pg)
+    return target_date, target_date, "max_quotes"
 
 
 def load_fixture_macro_quotes(fixture_dir: Path) -> pd.DataFrame:
@@ -70,9 +83,14 @@ def load_fixture_macro_quotes(fixture_dir: Path) -> pd.DataFrame:
     return pd.concat(rows, ignore_index=True)
 
 
-def run_pipeline(start: date, end: date, fixture_dir: Path | None = None) -> None:
+def run_pipeline(
+    start: date,
+    end: date,
+    fixture_dir: Path | None = None,
+    pg: PostgresClient | None = None,
+) -> None:
     params = load_params()
-    pg = PostgresClient()
+    pg = pg or PostgresClient()
     if fixture_dir:
         spy, breadth, vix, events, sectors, stocks = load_fixture_context(fixture_dir)
     else:
@@ -108,8 +126,16 @@ def main() -> None:
     logger.add(sys.stdout, level="INFO", format="[{level}] {message}")
     args = parse_args()
     try:
-        start, end = date_range(args)
-        run_pipeline(start, end, Path(args.fixture_dir) if args.fixture_dir else None)
+        pg = PostgresClient()
+        start, end, source = date_range(args, pg)
+        if start == end:
+            logger.info(f"orchestrate target_date={end.isoformat()} source={source}")
+        else:
+            logger.info(
+                f"orchestrate target_date={start.isoformat()}..{end.isoformat()} "
+                f"source={source}"
+            )
+        run_pipeline(start, end, Path(args.fixture_dir) if args.fixture_dir else None, pg=pg)
     except Exception:
         logger.exception("signals orchestration failed")
         raise SystemExit(1) from None
