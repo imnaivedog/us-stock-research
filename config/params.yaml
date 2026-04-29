@@ -1,0 +1,80 @@
+# US Stock Research · 信号引擎参数 · v1
+# 修改任何参数后 · pytest 必须全过
+
+l1_regime:
+  # S 档 4 硬门槛
+  s_hard:
+    h1_spy_dist_to_monthly_high_max_pct: 3.0
+    h2_breadth_200ma_min_p5y: 85
+    h3a_vix_max_p5y: 20
+    h3b_vix_10d_avg_max_p5y: 30
+    h4_event_window_days: 7
+  # S 档 1 软动能(任 1 满足)
+  s_soft_any:
+    s1_breadth_50ma_min_pct: 70
+    s2_nh_nl_min_ratio: 3.0
+    s3_mcclellan_min: 50
+  # 时间确认
+  s_confirm_days: 3
+  s_demote_days: 0
+  # 防抖冷却(ADR-020)
+  cooldown_a_to_s_days: 5
+  cooldown_adjacent_days: 2
+  cooldown_demote_s_days: 0
+  # 跳档豁免
+  jump_exempt_vix_single_day_pct: 30
+
+l2_breadth:
+  # 200MA 宽度三档(近 5 年)
+  pct_above_200ma:
+    healthy_min_p5y: 50
+    weak_max_p5y: 20
+  # 50MA 宽度极值(近 5 年)
+  pct_above_50ma_extreme:
+    yellow_p5y: 90
+    red_p5y: 95
+    bottom_yellow_p5y: 10
+    bottom_red_p5y: 5
+  # 50MA 钝化(近 2 年)
+  pct_above_50ma_dull:
+    window_years: 2
+    threshold_p2y: 75
+    consec_days: 40
+  # NH/NL
+  nh_nl:
+    extreme_red: 5.0
+    extreme_bottom: 0.2
+  # McClellan
+  mcclellan:
+    extreme_red: 100
+    extreme_bottom: -100
+  # Zweig Breadth Thrust
+  zweig:
+    window_days: 10
+    from_threshold: 40
+    to_threshold: 61.5
+  # 顶部背离(20 日窗口)
+  top_divergence:
+    window_days: 20
+    breadth_lag_min_pct: 5
+  # 持续确认窗
+  persistence:
+    observation_days: 1
+    yellow_days: 2
+    red_days: 3
+    structural_days: 5
+  # 总评分权重(0-100)
+  score_weights:
+    pct_above_200ma_p5y: 0.40
+    pct_above_50ma_p5y: 0.30
+    nh_nl_normalized: 0.15
+    mcclellan_normalized: 0.15
+
+events:
+  # 哪些事件类型纳入 H4 事件窗
+  blocking_types:
+    - FOMC
+    - CPI
+    - NFP
+    - ELECTION_PRESIDENTIAL
+    - ELECTION_MIDTERM
