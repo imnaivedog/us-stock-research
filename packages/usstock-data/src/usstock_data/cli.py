@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
+from datetime import date
+
+from loguru import logger
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -11,6 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     daily = subparsers.add_parser("daily", help="Run the data-layer daily pipeline.")
     daily.add_argument("--as-of", dest="as_of", help="Trade date to process, defaults to latest quotes.")
+    daily.add_argument("--dry-run", action="store_true", help="Print planned work without writes.")
 
     universe = subparsers.add_parser("universe", help="Manage m_pool and a_pool universes.")
     universe.add_argument("args", nargs=argparse.REMAINDER)
@@ -22,11 +27,43 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.command == "daily":
-        parser.error("daily pipeline is not implemented yet")
+        return asyncio.run(run_daily(as_of=parse_date_arg(args.as_of), dry_run=args.dry_run))
     if args.command == "universe":
         from usstock_data.universe.cli import main as universe_main
 
         return universe_main(args.args)
+    return 0
+
+
+def parse_date_arg(value: str | None) -> date | None:
+    return date.fromisoformat(value) if value else None
+
+
+async def run_daily(as_of: date | None = None, dry_run: bool = False) -> int:
+    from usstock_data.etl import (
+        corporate_actions,
+        earnings_calendar,
+        etf_holdings,
+        fundamentals,
+        macro_daily,
+        quotes_daily,
+        sp500_members,
+    )
+
+    steps = [
+        ("quotes", quotes_daily.run),
+        ("macro", macro_daily.run),
+        ("corporate_actions", corporate_actions.run),
+        ("fundamentals", fundamentals.run),
+        ("earnings_calendar", earnings_calendar.run),
+        ("sp500_members", sp500_members.run),
+        ("etf_holdings", etf_holdings.run),
+    ]
+    for name, step in steps:
+        logger.info("data daily step started: {}", name)
+        written = await step(as_of=as_of, dry_run=dry_run)
+        logger.info("data daily step finished: {} rows={}", name, written)
+    logger.info("universe sync and compute_indicators are implemented in later data commits")
     return 0
 
 
