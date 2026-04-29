@@ -34,9 +34,10 @@ $DbHost = "127.0.0.1"
 $DbPort = "5433"
 $DbName = "usstock"
 $DbUser = "postgres"
-$PsqlConn = "host=$DbHost port=$DbPort dbname=$DbName user=$DbUser"
+$PsqlArgs = @("--host=$DbHost", "--port=$DbPort", "--dbname=$DbName", "--username=$DbUser")
+$ProxyLog = "logs/cloud-sql-proxy.log"
 $StartedAt = Get-Date
-$ProxyJob = $null
+$ProxyProc = $null
 
 function Write-Step {
     param([string]$Message)
@@ -70,7 +71,7 @@ function Invoke-Step {
 function Invoke-Sql {
     param([string]$Sql)
     Invoke-Step "psql: $Sql" {
-        psql $PsqlConn -v ON_ERROR_STOP=1 -c $Sql
+        psql @PsqlArgs -v ON_ERROR_STOP=1 -c $Sql
     }
 }
 
@@ -86,16 +87,27 @@ try {
 
     Write-Step "Starting Cloud SQL Auth Proxy on port $DbPort"
     if ($DryRun) {
-        Write-Host "[DRYRUN] cloud-sql-proxy $Instance --port $DbPort"
+        Write-Host "[DRYRUN] Start-Process cloud-sql-proxy $Instance --port $DbPort > $ProxyLog"
     } else {
-        $ProxyJob = Start-Job -ScriptBlock {
-            param($InstanceArg, $PortArg)
-            cloud-sql-proxy $InstanceArg --port $PortArg
-        } -ArgumentList $Instance, $DbPort
-        Start-Sleep -Seconds 5
-        if ($ProxyJob.State -ne "Running") {
-            Receive-Job $ProxyJob | Write-Host
-            throw "Cloud SQL Auth Proxy job is not running"
+        New-Item -ItemType Directory -Force -Path (Split-Path $ProxyLog) | Out-Null
+        Set-Content -Path $ProxyLog -Value "" -Encoding UTF8
+        $proxyCommand = "cloud-sql-proxy $Instance --port $DbPort > `"$ProxyLog`" 2>&1"
+        $ProxyProc = Start-Process -FilePath "cmd.exe" `
+            -ArgumentList @("/c", $proxyCommand) `
+            -WindowStyle Hidden `
+            -PassThru
+        $proxyReady = $false
+        for ($attempt = 1; $attempt -le 30; $attempt++) {
+            if (Test-NetConnection -ComputerName $DbHost -Port $DbPort -InformationLevel Quiet) {
+                $proxyReady = $true
+                break
+            }
+            Start-Sleep -Seconds 1
+        }
+        if (-not $proxyReady) {
+            Write-Host "Cloud SQL Auth Proxy log:"
+            Get-Content $ProxyLog -ErrorAction SilentlyContinue | Write-Host
+            throw "Cloud SQL Auth Proxy did not listen on ${DbHost}:$DbPort within 30s"
         }
     }
 
@@ -117,7 +129,7 @@ try {
     )
     foreach ($migration in $migrations) {
         Invoke-Step "Applying migration $migration" {
-            psql $PsqlConn -v ON_ERROR_STOP=1 -f $migration
+            psql @PsqlArgs -v ON_ERROR_STOP=1 -f $migration
         }
     }
 
@@ -129,12 +141,12 @@ WHERE schemaname = 'public'
 ORDER BY tablename;
 "@
     Invoke-Step "Verifying schema tables" {
-        psql $PsqlConn -v ON_ERROR_STOP=1 -c $schemaSql
+        psql @PsqlArgs -v ON_ERROR_STOP=1 -c $schemaSql
     }
     if ($DryRun) {
         Write-Host "[DRYRUN] assert schema table count == 6"
     } else {
-        $schemaCount = psql $PsqlConn -At -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public' AND (tablename LIKE 'signals_%' OR tablename = 'daily_indicators');"
+        $schemaCount = psql @PsqlArgs -At -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public' AND (tablename LIKE 'signals_%' OR tablename = 'daily_indicators');"
         if ($LASTEXITCODE -ne 0 -or [int]$schemaCount -ne 6) {
             throw "Expected 6 signal pipeline tables, got $schemaCount"
         }
@@ -161,9 +173,9 @@ ORDER BY tablename;
 
     Write-Step "Acceptance SQL: daily_indicators"
     if ($DryRun) {
-        Write-Host "[DRYRUN] psql $PsqlConn -c `"SELECT COUNT(*) AS daily_indicators_rows, MIN(trade_date) AS min_date, MAX(trade_date) AS max_date FROM daily_indicators;`""
+        Write-Host "[DRYRUN] psql <split connection args> -c `"SELECT COUNT(*) AS daily_indicators_rows, MIN(trade_date) AS min_date, MAX(trade_date) AS max_date FROM daily_indicators;`""
     } else {
-        psql $PsqlConn -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) AS daily_indicators_rows, MIN(trade_date) AS min_date, MAX(trade_date) AS max_date FROM daily_indicators;"
+        psql @PsqlArgs -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) AS daily_indicators_rows, MIN(trade_date) AS min_date, MAX(trade_date) AS max_date FROM daily_indicators;"
         if ($LASTEXITCODE -ne 0) { throw "daily_indicators acceptance SQL failed" }
     }
 
@@ -177,9 +189,9 @@ UNION ALL SELECT 'signals_themes_daily', COUNT(*) FROM signals_themes_daily
 ORDER BY 1;
 "@
     if ($DryRun) {
-        Write-Host "[DRYRUN] psql $PsqlConn -c <signals table counts>"
+        Write-Host "[DRYRUN] psql <split connection args> -c <signals table counts>"
     } else {
-        psql $PsqlConn -v ON_ERROR_STOP=1 -c $signalsSql
+        psql @PsqlArgs -v ON_ERROR_STOP=1 -c $signalsSql
         if ($LASTEXITCODE -ne 0) { throw "signals acceptance SQL failed" }
     }
 
@@ -193,12 +205,13 @@ ORDER BY 1;
     Write-Error $_
     exit 1
 } finally {
-    if ($ProxyJob) {
+    if ($ProxyProc -and -not $ProxyProc.HasExited) {
         Write-Step "Stopping Cloud SQL Auth Proxy job"
-        Stop-Job $ProxyJob -ErrorAction SilentlyContinue
-        Remove-Job $ProxyJob -Force -ErrorAction SilentlyContinue
+        Get-CimInstance Win32_Process -Filter "ParentProcessId=$($ProxyProc.Id)" |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        Stop-Process -Id $ProxyProc.Id -Force -ErrorAction SilentlyContinue
     } elseif ($DryRun) {
         Write-Step "Stopping Cloud SQL Auth Proxy job"
-        Write-Host "[DRYRUN] Stop-Job <proxy-job>; Remove-Job <proxy-job>"
+        Write-Host "[DRYRUN] Stop-Process <proxy-process>"
     }
 }
