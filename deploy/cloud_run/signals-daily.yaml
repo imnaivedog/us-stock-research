@@ -8,7 +8,7 @@ spec:
   template:
     metadata:
       annotations:
-        run.googleapis.com/max-retries: "3"
+        run.googleapis.com/max-retries: "1"
     spec:
       template:
         spec:
@@ -16,9 +16,8 @@ spec:
           timeoutSeconds: 1800
           containers:
             - image: us-central1-docker.pkg.dev/naive-usstock-live/us-stock-repo/publisher:latest
-              command: ["sh", "-c"]
-              args:
-                - uv run python scripts/run_signals.py --date $(date -u +%Y-%m-%d)
+              command: ["python"]
+              args: ["-m", "signals.orchestrate"]
               env:
                 - name: PYTHONUNBUFFERED
                   value: "1"
@@ -40,6 +39,11 @@ spec:
                   valueFrom:
                     secretKeyRef:
                       name: db-password
+                      key: latest
+                - name: FMP_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: fmp-key
                       key: latest
             - image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.11.4
               args:

@@ -10,6 +10,7 @@ from sqlalchemy.engine import Engine, URL
 
 
 class PostgresSettings(BaseSettings):
+    database_url: str = ""
     use_cloud_sql_proxy: bool = True
     postgres_user: str = "postgres"
     postgres_password: str = ""
@@ -35,6 +36,8 @@ class PostgresClient:
         self.engine = self._create_engine()
 
     def _create_engine(self) -> Engine:
+        if self.settings.database_url:
+            return create_engine(self.settings.database_url, pool_pre_ping=True, future=True)
         url = URL.create(
             "postgresql+psycopg",
             username=self.settings.postgres_user,
