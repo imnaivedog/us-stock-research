@@ -78,7 +78,9 @@ CREATE TABLE IF NOT EXISTS symbol_universe (
     first_seen DATE,
     last_seen DATE,
     thesis_url TEXT,
-    target_market_cap NUMERIC,
+    shares_outstanding NUMERIC,
+    shares_outstanding_updated_at TIMESTAMPTZ,
+    thesis_added_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -96,7 +98,6 @@ CREATE TABLE IF NOT EXISTS symbol_universe_changes (
     market_cap NUMERIC,
     pool TEXT,
     thesis_url TEXT,
-    target_market_cap NUMERIC,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -312,6 +313,64 @@ CREATE TABLE IF NOT EXISTS fundamentals_quarterly (
 
 CREATE INDEX IF NOT EXISTS idx_fund_q_reported ON fundamentals_quarterly(reported_at);
 
+CREATE TABLE IF NOT EXISTS themes_master (
+    theme_id TEXT PRIMARY KEY,
+    name_cn TEXT NOT NULL,
+    name_en TEXT NOT NULL,
+    description TEXT,
+    source_etfs TEXT[],
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS themes_members (
+    theme_id TEXT REFERENCES themes_master(theme_id),
+    symbol TEXT NOT NULL,
+    weight NUMERIC,
+    source_etfs TEXT[],
+    PRIMARY KEY (theme_id, symbol)
+);
+
+CREATE INDEX IF NOT EXISTS idx_themes_members_symbol ON themes_members(symbol);
+
+CREATE TABLE IF NOT EXISTS themes_score_daily (
+    date DATE NOT NULL,
+    theme_id TEXT REFERENCES themes_master(theme_id),
+    raw_score NUMERIC,
+    rank INTEGER,
+    quintile TEXT,
+    member_count INTEGER,
+    PRIMARY KEY (date, theme_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_themes_score_quintile ON themes_score_daily(date, quintile);
+
+CREATE TABLE IF NOT EXISTS a_pool_calibration (
+    symbol TEXT PRIMARY KEY,
+    rsi14_p20 NUMERIC,
+    rsi14_p80 NUMERIC,
+    drawdown_p10 NUMERIC,
+    vol_avg_60d NUMERIC,
+    beta_120d NUMERIC,
+    calibrated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS signals_a_pool_daily (
+    date DATE NOT NULL,
+    symbol TEXT NOT NULL,
+    signals JSONB,
+    a_score NUMERIC,
+    score_breakdown JSONB,
+    verdict_text TEXT,
+    verdict_source TEXT,
+    thesis_stop_price NUMERIC,
+    target_price NUMERIC,
+    PRIMARY KEY (date, symbol)
+);
+
+CREATE INDEX IF NOT EXISTS idx_signals_a_pool_score
+    ON signals_a_pool_daily(date, a_score DESC);
+
 ALTER TABLE quotes_daily ADD COLUMN IF NOT EXISTS asset_class TEXT NOT NULL DEFAULT 'equity';
 ALTER TABLE macro_daily ADD COLUMN IF NOT EXISTS silver NUMERIC(18,4);
 ALTER TABLE macro_daily ADD COLUMN IF NOT EXISTS gold_silver_ratio NUMERIC(18,4);
@@ -327,10 +386,16 @@ ALTER TABLE macro_daily ADD COLUMN IF NOT EXISTS dgs2 NUMERIC(18,4);
 ALTER TABLE macro_daily ADD COLUMN IF NOT EXISTS spread_10y_2y NUMERIC(18,4);
 ALTER TABLE symbol_universe ADD COLUMN IF NOT EXISTS pool TEXT NOT NULL DEFAULT 'm';
 ALTER TABLE symbol_universe ADD COLUMN IF NOT EXISTS thesis_url TEXT;
-ALTER TABLE symbol_universe ADD COLUMN IF NOT EXISTS target_market_cap NUMERIC;
+ALTER TABLE symbol_universe ADD COLUMN IF NOT EXISTS shares_outstanding NUMERIC;
+ALTER TABLE symbol_universe ADD COLUMN IF NOT EXISTS shares_outstanding_updated_at TIMESTAMPTZ;
+ALTER TABLE symbol_universe ADD COLUMN IF NOT EXISTS thesis_added_at TIMESTAMPTZ;
+ALTER TABLE symbol_universe DROP COLUMN IF EXISTS target_cap;
+ALTER TABLE symbol_universe DROP COLUMN IF EXISTS target_market_cap;
 ALTER TABLE symbol_universe_changes ADD COLUMN IF NOT EXISTS pool TEXT;
 ALTER TABLE symbol_universe_changes ADD COLUMN IF NOT EXISTS thesis_url TEXT;
-ALTER TABLE symbol_universe_changes ADD COLUMN IF NOT EXISTS target_market_cap NUMERIC;
+ALTER TABLE symbol_universe_changes DROP COLUMN IF EXISTS target_cap;
+ALTER TABLE symbol_universe_changes DROP COLUMN IF EXISTS target_market_cap;
+ALTER TABLE alert_log ADD COLUMN IF NOT EXISTS category TEXT;
 ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS target_market_cap NUMERIC;
 ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS thesis_url VARCHAR;
 ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
