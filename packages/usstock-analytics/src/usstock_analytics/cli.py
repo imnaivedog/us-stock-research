@@ -14,7 +14,11 @@ def main(argv: list[str] | None = None) -> int:
         from usstock_analytics.signals.m_pool.orchestrate import main as signals_main
 
         return signals_main(args.args)
-    parser.error("backtest command is not implemented yet")
+    if args.command == "backtest":
+        from usstock_analytics.backtest.cli import main as backtest_main
+
+        return backtest_main(args.args)
+    parser.error("unknown command")
     return 2
 
 
