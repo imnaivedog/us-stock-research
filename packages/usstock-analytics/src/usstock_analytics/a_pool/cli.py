@@ -11,6 +11,9 @@ def build_parser() -> argparse.ArgumentParser:
     calibrate = sub.add_parser("calibrate")
     calibrate.add_argument("--symbols")
     calibrate.add_argument("--all", action="store_true")
+    signals = sub.add_parser("signals")
+    signals.add_argument("--date", required=True)
+    signals.add_argument("--symbols")
     return parser
 
 
@@ -25,4 +28,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.all:
             forwarded.append("--all")
         return calibrate_main(forwarded)
+    if args.command == "signals":
+        from usstock_analytics.a_pool.orchestrator import main as signals_main
+
+        forwarded = ["--date", args.date]
+        if args.symbols:
+            forwarded.extend(["--symbols", args.symbols])
+        return signals_main(forwarded)
     return 2
