@@ -125,3 +125,7 @@ class FMPClient:
     async def get_earnings_calendar(self, from_date: str, to_date: str) -> list[dict[str, Any]]:
         payload = await self.request("/earning-calendar", {"from": from_date, "to": to_date})
         return payload if isinstance(payload, list) else []
+
+    async def get_company_screener(self, params: dict[str, Any]) -> list[dict[str, Any]]:
+        payload = await self.request("/company-screener", params)
+        return payload if isinstance(payload, list) else []
