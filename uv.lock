@@ -709,6 +709,8 @@ name = "usstock-analytics"
 version = "0.1.0"
 source = { editable = "packages/usstock-analytics" }
 dependencies = [
+    { name = "loguru" },
+    { name = "numpy" },
     { name = "pandas" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pyyaml" },
@@ -717,6 +719,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "loguru", specifier = "==0.7.2" },
+    { name = "numpy", specifier = ">=2.0.0" },
     { name = "pandas", specifier = "==2.3.3" },
     { name = "psycopg", extras = ["binary"], specifier = "==3.2.3" },
     { name = "pyyaml", specifier = "==6.0.2" },
