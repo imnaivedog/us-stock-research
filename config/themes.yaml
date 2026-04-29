@@ -1,49 +1,342 @@
 themes:
-  - id: ai_compute
-    name: AI 算力
-    core: [NVDA, AVGO, AMD, MU]
-    diffusion: [VRT, SMCI, MRVL, DELL]
-    concept: []
-    inception_date: "2023-01-01"
-  - id: ai_application
-    name: AI 应用
-    core: [MSFT, META, GOOGL]
-    diffusion: [CRM, NOW]
-    concept: []
-    inception_date: "2023-01-01"
-  - id: defense_revival
-    name: 国防回归
-    core: [LMT, NOC, RTX]
-    diffusion: [GE, HII]
-    concept: []
-    inception_date: "2024-01-01"
-  - id: heavy_industry
-    name: 重工业回归
-    core: [CAT, DE, ETN]
-    diffusion: [URI, PWR]
-    concept: []
-    inception_date: "2024-01-01"
-  - id: nuclear_power
-    name: 核能复兴
-    core: [CCJ, VST, CEG]
-    diffusion: [NRG, CWEN]
-    concept: []
-    inception_date: "2024-06-01"
-  - id: glp1_obesity
-    name: 减肥药 GLP-1
-    core: [LLY, NVO, REGN]
-    diffusion: [VKTX]
-    concept: []
-    inception_date: "2023-06-01"
-  - id: crypto
-    name: 加密资产
-    core: [COIN]
-    diffusion: [MSTR, RIOT]
-    concept: []
-    inception_date: "2023-01-01"
-  - id: fintech
-    name: 金融科技
-    core: [V, MA, PYPL]
-    diffusion: [SQ, SOFI]
-    concept: []
-    inception_date: "2022-01-01"
+  - theme_id: theme_ai_compute
+    name_cn: AI 算力
+    name_en: AI Compute
+    description: GPU / TPU / AI accelerator compute supply chain
+    source_etfs: [SMH, SOXX, AIQ]
+    members:
+      - {symbol: NVDA, weight: 0.18}
+      - {symbol: AMD, weight: 0.05}
+      - {symbol: AVGO, weight: 0.05}
+      - {symbol: MRVL, weight: 0.03}
+      - {symbol: VRT, weight: 0.03}
+  - theme_id: theme_semiconductor
+    name_cn: 半导体
+    name_en: Semiconductors
+    description: Semiconductor design, equipment, and manufacturing
+    source_etfs: [SMH, SOXX]
+    members:
+      - {symbol: NVDA, weight: 0.18}
+      - {symbol: TSM, weight: 0.08}
+      - {symbol: ASML, weight: 0.06}
+      - {symbol: AMD, weight: 0.05}
+      - {symbol: QCOM, weight: 0.04}
+  - theme_id: theme_gpu
+    name_cn: GPU
+    name_en: GPU
+    description: GPU and accelerated computing leaders
+    source_etfs: [SMH, SOXX]
+    members:
+      - {symbol: NVDA, weight: 0.22}
+      - {symbol: AMD, weight: 0.08}
+      - {symbol: AVGO, weight: 0.04}
+      - {symbol: MRVL, weight: 0.03}
+      - {symbol: ARM, weight: 0.03}
+  - theme_id: theme_megacap_tech
+    name_cn: 超大盘科技
+    name_en: Megacap Tech
+    description: Large platform technology companies
+    source_etfs: [QQQ, XLK]
+    members:
+      - {symbol: MSFT, weight: 0.10}
+      - {symbol: AAPL, weight: 0.09}
+      - {symbol: GOOGL, weight: 0.06}
+      - {symbol: META, weight: 0.05}
+      - {symbol: AMZN, weight: 0.05}
+  - theme_id: theme_enterprise_software
+    name_cn: 企业软件
+    name_en: Enterprise Software
+    description: Cloud and enterprise software platforms
+    source_etfs: [IGV, SKYY]
+    members:
+      - {symbol: MSFT, weight: 0.08}
+      - {symbol: CRM, weight: 0.06}
+      - {symbol: NOW, weight: 0.05}
+      - {symbol: ADBE, weight: 0.04}
+      - {symbol: SNOW, weight: 0.03}
+  - theme_id: theme_cybersecurity
+    name_cn: 网络安全
+    name_en: Cybersecurity
+    description: Security software and infrastructure
+    source_etfs: [CIBR, HACK]
+    members:
+      - {symbol: PANW, weight: 0.07}
+      - {symbol: CRWD, weight: 0.07}
+      - {symbol: FTNT, weight: 0.05}
+      - {symbol: ZS, weight: 0.04}
+      - {symbol: OKTA, weight: 0.03}
+  - theme_id: theme_cloud_infra
+    name_cn: 云基础设施
+    name_en: Cloud Infrastructure
+    description: Cloud infrastructure and SaaS enablers
+    source_etfs: [SKYY, WCLD]
+    members:
+      - {symbol: AMZN, weight: 0.06}
+      - {symbol: MSFT, weight: 0.06}
+      - {symbol: GOOGL, weight: 0.05}
+      - {symbol: NET, weight: 0.03}
+      - {symbol: DDOG, weight: 0.03}
+  - theme_id: theme_clean_energy
+    name_cn: 清洁能源
+    name_en: Clean Energy
+    description: Solar, wind, storage, and clean energy equipment
+    source_etfs: [ICLN, TAN]
+    members:
+      - {symbol: FSLR, weight: 0.06}
+      - {symbol: ENPH, weight: 0.04}
+      - {symbol: SEDG, weight: 0.03}
+      - {symbol: NEE, weight: 0.03}
+      - {symbol: BE, weight: 0.02}
+  - theme_id: theme_energy_traditional
+    name_cn: 传统能源
+    name_en: Traditional Energy
+    description: Oil, gas, and energy services
+    source_etfs: [XLE, XOP, OIH]
+    members:
+      - {symbol: XOM, weight: 0.10}
+      - {symbol: CVX, weight: 0.08}
+      - {symbol: SLB, weight: 0.05}
+      - {symbol: COP, weight: 0.04}
+      - {symbol: EOG, weight: 0.03}
+  - theme_id: theme_nuclear
+    name_cn: 核能
+    name_en: Nuclear Power
+    description: Nuclear generation and uranium supply chain
+    source_etfs: [NLR, URA, NUKZ]
+    members:
+      - {symbol: CEG, weight: 0.06}
+      - {symbol: CCJ, weight: 0.06}
+      - {symbol: VST, weight: 0.05}
+      - {symbol: BWXT, weight: 0.03}
+      - {symbol: UEC, weight: 0.02}
+  - theme_id: theme_financials
+    name_cn: 金融
+    name_en: Financials
+    description: Banks, exchanges, and diversified financials
+    source_etfs: [XLF, KBE, KRE]
+    members:
+      - {symbol: JPM, weight: 0.08}
+      - {symbol: BAC, weight: 0.05}
+      - {symbol: GS, weight: 0.04}
+      - {symbol: MS, weight: 0.04}
+      - {symbol: C, weight: 0.03}
+  - theme_id: theme_fintech
+    name_cn: 金融科技
+    name_en: Fintech
+    description: Payment networks and fintech platforms
+    source_etfs: [FINX, ARKF]
+    members:
+      - {symbol: V, weight: 0.07}
+      - {symbol: MA, weight: 0.07}
+      - {symbol: PYPL, weight: 0.04}
+      - {symbol: SQ, weight: 0.04}
+      - {symbol: SOFI, weight: 0.03}
+  - theme_id: theme_healthcare
+    name_cn: 医疗保健
+    name_en: Healthcare
+    description: Healthcare broad sector
+    source_etfs: [XLV]
+    members:
+      - {symbol: LLY, weight: 0.08}
+      - {symbol: UNH, weight: 0.07}
+      - {symbol: JNJ, weight: 0.05}
+      - {symbol: ABBV, weight: 0.04}
+      - {symbol: MRK, weight: 0.04}
+  - theme_id: theme_biotech
+    name_cn: 生物科技
+    name_en: Biotech
+    description: Biotechnology therapeutics
+    source_etfs: [IBB, XBI, ARKG]
+    members:
+      - {symbol: AMGN, weight: 0.05}
+      - {symbol: GILD, weight: 0.04}
+      - {symbol: VRTX, weight: 0.04}
+      - {symbol: REGN, weight: 0.04}
+      - {symbol: MRNA, weight: 0.03}
+  - theme_id: theme_glp1
+    name_cn: GLP-1
+    name_en: GLP-1 Obesity
+    description: Obesity and metabolic therapeutics
+    source_etfs: [IBB, XLV]
+    members:
+      - {symbol: LLY, weight: 0.08}
+      - {symbol: NVO, weight: 0.07}
+      - {symbol: VKTX, weight: 0.02}
+      - {symbol: AMGN, weight: 0.02}
+      - {symbol: PFE, weight: 0.01}
+  - theme_id: theme_medtech
+    name_cn: 医疗器械
+    name_en: Medical Devices
+    description: Medical devices and equipment
+    source_etfs: [IHI]
+    members:
+      - {symbol: ISRG, weight: 0.08}
+      - {symbol: ABT, weight: 0.07}
+      - {symbol: MDT, weight: 0.05}
+      - {symbol: SYK, weight: 0.05}
+      - {symbol: BSX, weight: 0.04}
+  - theme_id: theme_defense
+    name_cn: 国防军工
+    name_en: Defense
+    description: Aerospace and defense contractors
+    source_etfs: [ITA, XAR]
+    members:
+      - {symbol: RTX, weight: 0.07}
+      - {symbol: LMT, weight: 0.06}
+      - {symbol: NOC, weight: 0.05}
+      - {symbol: GD, weight: 0.04}
+      - {symbol: HWM, weight: 0.03}
+  - theme_id: theme_infrastructure
+    name_cn: 基建
+    name_en: Infrastructure
+    description: US infrastructure and construction beneficiaries
+    source_etfs: [PAVE, XLI]
+    members:
+      - {symbol: CAT, weight: 0.05}
+      - {symbol: URI, weight: 0.04}
+      - {symbol: ETN, weight: 0.04}
+      - {symbol: PWR, weight: 0.03}
+      - {symbol: VMC, weight: 0.03}
+  - theme_id: theme_industrials
+    name_cn: 工业
+    name_en: Industrials
+    description: Broad industrial sector
+    source_etfs: [XLI]
+    members:
+      - {symbol: GE, weight: 0.06}
+      - {symbol: CAT, weight: 0.05}
+      - {symbol: HON, weight: 0.04}
+      - {symbol: UNP, weight: 0.04}
+      - {symbol: RTX, weight: 0.04}
+  - theme_id: theme_housing
+    name_cn: 房屋建造
+    name_en: Housing
+    description: Homebuilders and housing supply chain
+    source_etfs: [XHB]
+    members:
+      - {symbol: DHI, weight: 0.05}
+      - {symbol: LEN, weight: 0.05}
+      - {symbol: PHM, weight: 0.04}
+      - {symbol: TOL, weight: 0.03}
+      - {symbol: HD, weight: 0.03}
+  - theme_id: theme_consumer_discretionary
+    name_cn: 可选消费
+    name_en: Consumer Discretionary
+    description: Discretionary consumption leaders
+    source_etfs: [XLY]
+    members:
+      - {symbol: AMZN, weight: 0.12}
+      - {symbol: TSLA, weight: 0.08}
+      - {symbol: HD, weight: 0.06}
+      - {symbol: MCD, weight: 0.04}
+      - {symbol: NKE, weight: 0.03}
+  - theme_id: theme_consumer_staples
+    name_cn: 必需消费
+    name_en: Consumer Staples
+    description: Staples and defensive consumption
+    source_etfs: [XLP]
+    members:
+      - {symbol: COST, weight: 0.08}
+      - {symbol: WMT, weight: 0.07}
+      - {symbol: PG, weight: 0.06}
+      - {symbol: KO, weight: 0.05}
+      - {symbol: PEP, weight: 0.05}
+  - theme_id: theme_communications
+    name_cn: 通信服务
+    name_en: Communications
+    description: Communications, media, and internet platforms
+    source_etfs: [XLC, FDN]
+    members:
+      - {symbol: META, weight: 0.10}
+      - {symbol: GOOGL, weight: 0.09}
+      - {symbol: NFLX, weight: 0.05}
+      - {symbol: DIS, weight: 0.04}
+      - {symbol: TMUS, weight: 0.03}
+  - theme_id: theme_gaming
+    name_cn: 游戏电竞
+    name_en: Gaming
+    description: Gaming and esports ecosystem
+    source_etfs: [ESPO, HERO]
+    members:
+      - {symbol: NVDA, weight: 0.08}
+      - {symbol: RBLX, weight: 0.04}
+      - {symbol: EA, weight: 0.04}
+      - {symbol: TTWO, weight: 0.04}
+      - {symbol: NTES, weight: 0.03}
+  - theme_id: theme_crypto
+    name_cn: 加密资产
+    name_en: Crypto
+    description: Crypto assets and infrastructure
+    source_etfs: [IBIT, BLOK]
+    members:
+      - {symbol: COIN, weight: 0.08}
+      - {symbol: MSTR, weight: 0.07}
+      - {symbol: RIOT, weight: 0.03}
+      - {symbol: MARA, weight: 0.03}
+      - {symbol: CLSK, weight: 0.02}
+  - theme_id: theme_materials
+    name_cn: 材料
+    name_en: Materials
+    description: Broad materials sector
+    source_etfs: [XLB]
+    members:
+      - {symbol: LIN, weight: 0.08}
+      - {symbol: SHW, weight: 0.05}
+      - {symbol: ECL, weight: 0.04}
+      - {symbol: APD, weight: 0.04}
+      - {symbol: FCX, weight: 0.03}
+  - theme_id: theme_copper
+    name_cn: 铜
+    name_en: Copper
+    description: Copper miners and electrification materials
+    source_etfs: [COPX]
+    members:
+      - {symbol: FCX, weight: 0.08}
+      - {symbol: SCCO, weight: 0.07}
+      - {symbol: TECK, weight: 0.04}
+      - {symbol: RIO, weight: 0.03}
+      - {symbol: BHP, weight: 0.03}
+  - theme_id: theme_gold_miners
+    name_cn: 金矿
+    name_en: Gold Miners
+    description: Gold miners and precious metals equities
+    source_etfs: [GDX, GDXJ]
+    members:
+      - {symbol: NEM, weight: 0.08}
+      - {symbol: GOLD, weight: 0.06}
+      - {symbol: AEM, weight: 0.05}
+      - {symbol: WPM, weight: 0.04}
+      - {symbol: FNV, weight: 0.04}
+  - theme_id: theme_reits
+    name_cn: REITs
+    name_en: REITs
+    description: Real estate investment trusts
+    source_etfs: [VNQ, XLRE]
+    members:
+      - {symbol: PLD, weight: 0.08}
+      - {symbol: AMT, weight: 0.06}
+      - {symbol: EQIX, weight: 0.05}
+      - {symbol: WELL, weight: 0.04}
+      - {symbol: O, weight: 0.03}
+  - theme_id: theme_utilities
+    name_cn: 公用事业
+    name_en: Utilities
+    description: Utility companies and defensive yield
+    source_etfs: [XLU]
+    members:
+      - {symbol: NEE, weight: 0.09}
+      - {symbol: SO, weight: 0.06}
+      - {symbol: DUK, weight: 0.05}
+      - {symbol: CEG, weight: 0.04}
+      - {symbol: VST, weight: 0.03}
+  - theme_id: theme_transport
+    name_cn: 运输
+    name_en: Transportation
+    description: Airlines, rails, and transport logistics
+    source_etfs: [JETS, XLI]
+    members:
+      - {symbol: DAL, weight: 0.04}
+      - {symbol: UAL, weight: 0.04}
+      - {symbol: LUV, weight: 0.03}
+      - {symbol: UNP, weight: 0.03}
+      - {symbol: UPS, weight: 0.03}
