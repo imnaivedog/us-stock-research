@@ -22,6 +22,10 @@ def build_parser() -> argparse.ArgumentParser:
     universe = subparsers.add_parser("universe", help="Manage m_pool and a_pool universes.")
     universe.add_argument("args", nargs=argparse.REMAINDER)
 
+    etl = subparsers.add_parser("etl", help="Run individual ETL jobs.")
+    etl.add_argument("name", choices=["shares-outstanding"])
+    etl.add_argument("args", nargs=argparse.REMAINDER)
+
     return parser
 
 
@@ -34,6 +38,11 @@ def main(argv: list[str] | None = None) -> int:
         from usstock_data.universe.cli import main as universe_main
 
         return universe_main(args.args)
+    if args.command == "etl":
+        if args.name == "shares-outstanding":
+            from usstock_data.etl.shares_outstanding import main as shares_main
+
+            return shares_main(args.args)
     return 0
 
 

@@ -7,6 +7,7 @@ from usstock_data.etl.earnings_calendar import calendar_rows
 from usstock_data.etl.fundamentals import fundamentals_rows
 from usstock_data.etl.macro_daily import build_macro_rows
 from usstock_data.etl.quotes_daily import quote_rows
+from usstock_data.etl.shares_outstanding import row_from_polygon_response, warn_row
 
 
 def test_quote_rows_maps_fmp_history() -> None:
@@ -99,3 +100,20 @@ def test_earnings_calendar_rows_use_events_calendar_shape() -> None:
             "details": {"symbol": "aapl", "date": "2026-05-01", "epsEstimated": 1.2},
         }
     ]
+
+
+def test_shares_outstanding_rows_maps_polygon_response() -> None:
+    row = row_from_polygon_response(
+        "nvda",
+        {"results": {"share_class_shares_outstanding": 24_000_000_000}},
+    )
+    assert row is not None
+    assert row.symbol == "NVDA"
+    assert row.shares_outstanding == 24_000_000_000
+
+
+def test_shares_outstanding_etl_skips_null_response_with_warn() -> None:
+    assert row_from_polygon_response("NVDA", {"results": {}}) is None
+    alert = warn_row("nvda", "missing")
+    assert alert["severity"] == "WARN"
+    assert alert["category"] == "shares_outstanding"
