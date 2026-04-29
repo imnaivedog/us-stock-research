@@ -15,7 +15,6 @@ from sqlalchemy.engine import Engine
 from usstock_data.etl.common import normalize_symbol
 from usstock_data.universe.core import audit_change, engine_or_default, upsert_universe_symbols
 
-
 LOCAL_TZ = ZoneInfo("Asia/Shanghai")
 
 
@@ -58,7 +57,10 @@ def add(
                 INSERT INTO watchlist (
                     symbol, source, added_date, target_market_cap, status, thesis_url, updated_at
                 )
-                VALUES (:symbol, :source, :added_date, :target_market_cap, 'watching', :thesis_url, now())
+                VALUES (
+                    :symbol, :source, :added_date, :target_market_cap,
+                    'watching', :thesis_url, now()
+                )
                 ON CONFLICT (symbol) DO UPDATE SET
                     source = EXCLUDED.source,
                     target_market_cap = EXCLUDED.target_market_cap,
@@ -93,13 +95,21 @@ def remove(symbol: str, *, engine: Engine | None = None, reason: str | None = No
             text(
                 """
                 UPDATE symbol_universe
-                SET is_active = false, removed_date = CURRENT_DATE, last_seen = CURRENT_DATE, updated_at = now()
+                SET is_active = false,
+                    removed_date = CURRENT_DATE,
+                    last_seen = CURRENT_DATE,
+                    updated_at = now()
                 WHERE symbol = :symbol AND pool = 'a'
                 """
             ),
             {"symbol": symbol},
         )
-        conn.execute(text("UPDATE watchlist SET status = 'exited', updated_at = now() WHERE symbol = :symbol"), {"symbol": symbol})
+        conn.execute(
+            text(
+                "UPDATE watchlist SET status = 'exited', updated_at = now() WHERE symbol = :symbol"
+            ),
+            {"symbol": symbol},
+        )
     audit_change(engine, symbol, "removed", pool="a", reason=reason or "a_pool_manual_remove")
 
 
@@ -118,7 +128,13 @@ def set_target(symbol: str, target_market_cap: float, *, engine: Engine | None =
             {"symbol": symbol, "target_market_cap": target_market_cap},
         )
         conn.execute(
-            text("UPDATE watchlist SET target_market_cap = :target_market_cap, updated_at = now() WHERE symbol = :symbol"),
+            text(
+                """
+                UPDATE watchlist
+                SET target_market_cap = :target_market_cap, updated_at = now()
+                WHERE symbol = :symbol
+                """
+            ),
             {"symbol": symbol, "target_market_cap": target_market_cap},
         )
     audit_change(

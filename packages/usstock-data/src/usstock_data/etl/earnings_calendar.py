@@ -11,7 +11,6 @@ from usstock_data.db import create_postgres_engine
 from usstock_data.etl.common import normalize_symbol, parse_date, run_many
 from usstock_data.etl.fmp_client import FMPClient
 
-
 ET_TZ = ZoneInfo("America/New_York")
 
 
@@ -32,7 +31,9 @@ def calendar_rows(payload: list[dict[str, object]]) -> list[dict[str, object]]:
     return rows
 
 
-async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False) -> int:
+async def run(
+    engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False
+) -> int:
     engine = engine or create_postgres_engine()
     start = as_of or datetime.now(ET_TZ).date()
     end = start + timedelta(days=90)

@@ -14,7 +14,6 @@ from usstock_data.etl.common import normalize_symbol, parse_date, parse_number
 from usstock_data.etl.fmp_client import FMPClient
 from usstock_data.universe.core import audit_change, engine_or_default, upsert_universe_symbols
 
-
 LOCAL_TZ = ZoneInfo("Asia/Shanghai")
 MARKET_CAP_MIN = 1_000_000_000
 ADV_20D_MIN = 10_000_000
@@ -32,7 +31,9 @@ def candidate_from_screener(item: dict[str, Any], today: date) -> dict[str, Any]
     market_cap = parse_number(item.get("marketCap"))
     price = parse_number(item.get("price"))
     volume = parse_number(item.get("volume") or item.get("avgVolume"))
-    adv_20d = parse_number(item.get("avgVolume20d")) or (price * volume if price and volume else None)
+    adv_20d = parse_number(item.get("avgVolume20d")) or (
+        price * volume if price and volume else None
+    )
     ipo_date = parse_date(item.get("ipoDate"))
     if market_cap is not None and market_cap < MARKET_CAP_MIN:
         return None
@@ -73,7 +74,9 @@ async def fetch_candidates(today: date) -> list[dict[str, Any]]:
     return [row for item in payload if (row := candidate_from_screener(item, today))]
 
 
-async def sync(engine: Engine | None = None, today: date | None = None, dry_run: bool = False) -> dict[str, int]:
+async def sync(
+    engine: Engine | None = None, today: date | None = None, dry_run: bool = False
+) -> dict[str, int]:
     engine = engine_or_default(engine)
     today = today or datetime.now(LOCAL_TZ).date()
     candidates = await fetch_candidates(today)
@@ -95,7 +98,10 @@ async def sync(engine: Engine | None = None, today: date | None = None, dry_run:
                 text(
                     """
                     UPDATE symbol_universe
-                    SET is_active = false, removed_date = :today, last_seen = :today, updated_at = now()
+                    SET is_active = false,
+                        removed_date = :today,
+                        last_seen = :today,
+                        updated_at = now()
                     WHERE pool = 'm' AND symbol IN :symbols
                     """
                 ).bindparams(bindparam("symbols", expanding=True)),

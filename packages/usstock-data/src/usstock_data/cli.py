@@ -14,7 +14,9 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     daily = subparsers.add_parser("daily", help="Run the data-layer daily pipeline.")
-    daily.add_argument("--as-of", dest="as_of", help="Trade date to process, defaults to latest quotes.")
+    daily.add_argument(
+        "--as-of", dest="as_of", help="Trade date to process, defaults to latest quotes."
+    )
     daily.add_argument("--dry-run", action="store_true", help="Print planned work without writes.")
 
     universe = subparsers.add_parser("universe", help="Manage m_pool and a_pool universes.")
@@ -63,7 +65,18 @@ async def run_daily(as_of: date | None = None, dry_run: bool = False) -> int:
         logger.info("data daily step started: {}", name)
         written = await step(as_of=as_of, dry_run=dry_run)
         logger.info("data daily step finished: {} rows={}", name, written)
-    logger.info("universe sync and compute_indicators are implemented in later data commits")
+    from usstock_data.derived.compute_indicators import run_compute_indicators
+    from usstock_data.universe.sync import sync_all
+
+    logger.info("data daily step started: universe sync")
+    sync_result = await sync_all(dry_run=dry_run)
+    logger.info("data daily step finished: universe sync {}", sync_result)
+    if as_of is None:
+        logger.info("compute_indicators skipped because --as-of was not provided")
+    else:
+        logger.info("data daily step started: compute_indicators")
+        result = run_compute_indicators(as_of=as_of, dry_run=dry_run)
+        logger.info("data daily step finished: compute_indicators rows={}", result.rows_written)
     return 0
 
 

@@ -12,7 +12,17 @@ from usstock_data.etl.quotes_daily import quote_rows
 def test_quote_rows_maps_fmp_history() -> None:
     rows = quote_rows(
         "AAPL",
-        [{"date": "2026-04-29", "open": "1", "high": "2", "low": "0.5", "close": "1.5", "adjClose": "1.4", "volume": "10"}],
+        [
+            {
+                "date": "2026-04-29",
+                "open": "1",
+                "high": "2",
+                "low": "0.5",
+                "close": "1.5",
+                "adjClose": "1.4",
+                "volume": "10",
+            }
+        ],
     )
     assert rows == [
         {
@@ -32,10 +42,26 @@ def test_quote_rows_maps_fmp_history() -> None:
 def test_macro_rows_compute_spreads_and_alias_yields() -> None:
     rows = build_macro_rows(
         [
-            type("SourceRows", (), {"key": "hyg", "rows": [{"trade_date": date(2026, 4, 29), "value": 80.0}]}),
-            type("SourceRows", (), {"key": "lqd", "rows": [{"trade_date": date(2026, 4, 29), "value": 100.0}]}),
-            type("SourceRows", (), {"key": "us10y", "rows": [{"trade_date": date(2026, 4, 29), "value": 4.5}]}),
-            type("SourceRows", (), {"key": "us2y", "rows": [{"trade_date": date(2026, 4, 29), "value": 4.0}]}),
+            type(
+                "SourceRows",
+                (),
+                {"key": "hyg", "rows": [{"trade_date": date(2026, 4, 29), "value": 80.0}]},
+            ),
+            type(
+                "SourceRows",
+                (),
+                {"key": "lqd", "rows": [{"trade_date": date(2026, 4, 29), "value": 100.0}]},
+            ),
+            type(
+                "SourceRows",
+                (),
+                {"key": "us10y", "rows": [{"trade_date": date(2026, 4, 29), "value": 4.5}]},
+            ),
+            type(
+                "SourceRows",
+                (),
+                {"key": "us2y", "rows": [{"trade_date": date(2026, 4, 29), "value": 4.0}]},
+            ),
         ]
     )
     assert rows[0]["hyg_lqd_spread"] == -20.0

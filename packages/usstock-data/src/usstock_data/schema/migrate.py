@@ -9,7 +9,6 @@ from loguru import logger
 
 from usstock_data.db import create_postgres_engine
 
-
 DDL_PATH = Path(__file__).with_name("ddl.sql")
 
 
@@ -24,7 +23,9 @@ def run_migration(database_url: str | None = None, ddl_path: Path = DDL_PATH) ->
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m usstock_data.schema.migrate")
-    parser.add_argument("--database-url", help="Override DATABASE_URL/POSTGRES_* environment config.")
+    parser.add_argument(
+        "--database-url", help="Override DATABASE_URL/POSTGRES_* environment config."
+    )
     parser.add_argument("--ddl", type=Path, default=DDL_PATH, help="DDL file to execute.")
     return parser
 

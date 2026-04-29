@@ -16,7 +16,6 @@ from usstock_data.db import create_postgres_engine
 from usstock_data.etl.common import CONFIG_DIR, load_yaml, parse_date, parse_number, upsert_rows
 from usstock_data.etl.fmp_client import FMPClient
 
-
 ET_TZ = ZoneInfo("America/New_York")
 TREASURY_RATE_PREFIX = "treasury_rates:"
 NULL_MAX_LOOKBACK_DAYS = 10
@@ -63,7 +62,10 @@ def rows_from_history(key: str, history: list[dict[str, object]]) -> SourceRows:
     return SourceRows(
         key,
         [
-            {"trade_date": trade_date, "value": parse_number(item.get("adjClose") or item.get("close"))}
+            {
+                "trade_date": trade_date,
+                "value": parse_number(item.get("adjClose") or item.get("close")),
+            }
             for item in history
             if (trade_date := parse_date(item.get("date")))
         ],
@@ -81,10 +83,14 @@ def rows_from_treasury_rates(key: str, rates: list[dict[str, object]], field: st
     )
 
 
-async def fetch_source(client: FMPClient, key: str, source: str, start: date, end: date) -> SourceRows:
+async def fetch_source(
+    client: FMPClient, key: str, source: str, start: date, end: date
+) -> SourceRows:
     if source.startswith(TREASURY_RATE_PREFIX):
         field = source.removeprefix(TREASURY_RATE_PREFIX)
-        rates = await client.get_treasury_rates((end - timedelta(days=TREASURY_LOOKBACK_DAYS)).isoformat(), end.isoformat())
+        rates = await client.get_treasury_rates(
+            (end - timedelta(days=TREASURY_LOOKBACK_DAYS)).isoformat(), end.isoformat()
+        )
         return rows_from_treasury_rates(key, rates, field)
     history = await client.get_historical(source, start.isoformat(), end.isoformat())
     return rows_from_history(key, history)
@@ -119,11 +125,15 @@ def last_trade_date(engine: Engine) -> date | None:
         return conn.execute(text("SELECT MAX(trade_date) FROM macro_daily")).scalar_one()
 
 
-async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False) -> int:
+async def run(
+    engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False
+) -> int:
     engine = engine or create_postgres_engine()
     end = as_of or datetime.now(ET_TZ).date()
     last = last_trade_date(engine)
-    start = end - timedelta(days=NULL_MAX_LOOKBACK_DAYS) if last is None else last + timedelta(days=1)
+    start = (
+        end - timedelta(days=NULL_MAX_LOOKBACK_DAYS) if last is None else last + timedelta(days=1)
+    )
     symbols = load_macro_symbols()
     logger.info("macro_daily fetch window: {} to {}; sources={}", start, end, len(symbols))
     if dry_run:
@@ -140,4 +150,6 @@ async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: 
             continue
         source_rows.append(result)
     rows = build_macro_rows(source_rows)
-    return upsert_rows(engine, "macro_daily", rows, conflict_cols=["trade_date"], update_cols=MACRO_COLUMNS)
+    return upsert_rows(
+        engine, "macro_daily", rows, conflict_cols=["trade_date"], update_cols=MACRO_COLUMNS
+    )

@@ -15,7 +15,6 @@ from usstock_data.db import create_postgres_engine
 from usstock_data.etl.common import parse_date, parse_number, upsert_rows
 from usstock_data.etl.fmp_client import FMPClient
 
-
 ET_TZ = ZoneInfo("America/New_York")
 NULL_MAX_LOOKBACK_DAYS = 10
 FETCH_BATCH_SIZE = 50
@@ -27,7 +26,9 @@ class QuoteState:
     max_trade_date: date | None
 
 
-def quote_rows(symbol: str, history: list[dict[str, object]], asset_class: str = "equity") -> list[dict[str, object]]:
+def quote_rows(
+    symbol: str, history: list[dict[str, object]], asset_class: str = "equity"
+) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     for item in history:
         trade_date = parse_date(item.get("date"))
@@ -41,7 +42,9 @@ def quote_rows(symbol: str, history: list[dict[str, object]], asset_class: str =
                 "high": parse_number(item.get("high")),
                 "low": parse_number(item.get("low")),
                 "close": parse_number(item.get("close")),
-                "adj_close": parse_number(item.get("adjClose") or item.get("adj_close") or item.get("close")),
+                "adj_close": parse_number(
+                    item.get("adjClose") or item.get("adj_close") or item.get("close")
+                ),
                 "volume": int(parse_number(item.get("volume")) or 0),
                 "asset_class": asset_class,
             }
@@ -50,7 +53,11 @@ def quote_rows(symbol: str, history: list[dict[str, object]], asset_class: str =
 
 
 def next_fetch_date(max_trade_date: date | None, today: date) -> date:
-    return today - timedelta(days=NULL_MAX_LOOKBACK_DAYS) if max_trade_date is None else max_trade_date + timedelta(days=1)
+    return (
+        today - timedelta(days=NULL_MAX_LOOKBACK_DAYS)
+        if max_trade_date is None
+        else max_trade_date + timedelta(days=1)
+    )
 
 
 def load_quote_states(engine: Engine) -> list[QuoteState]:
@@ -91,14 +98,22 @@ async def fetch_due_quotes(states: list[QuoteState], today: date) -> list[dict[s
                     logger.exception("Skipping quote fetch for {}", state.symbol)
                     continue
                 all_rows.extend(quote_rows(state.symbol, result))
-            logger.info("quote fetch progress: {}/{}", min(idx + len(batch), len(states)), len(states))
+            logger.info(
+                "quote fetch progress: {}/{}", min(idx + len(batch), len(states)), len(states)
+            )
     return all_rows
 
 
-async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False) -> int:
+async def run(
+    engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False
+) -> int:
     engine = engine or create_postgres_engine()
     today = as_of or datetime.now(ET_TZ).date()
-    due = [state for state in load_quote_states(engine) if next_fetch_date(state.max_trade_date, today) <= today]
+    due = [
+        state
+        for state in load_quote_states(engine)
+        if next_fetch_date(state.max_trade_date, today) <= today
+    ]
     logger.info("quotes_daily due symbols: {}", len(due))
     if dry_run:
         return 0

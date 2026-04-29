@@ -6,11 +6,17 @@ import asyncio
 from datetime import date
 
 from loguru import logger
-from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from usstock_data.db import create_postgres_engine
-from usstock_data.etl.common import fetch_symbols_in_pool, normalize_symbol, parse_date, parse_number, run_many, upsert_rows
+from usstock_data.etl.common import (
+    fetch_symbols_in_pool,
+    normalize_symbol,
+    parse_date,
+    parse_number,
+    run_many,
+    upsert_rows,
+)
 from usstock_data.etl.fmp_client import FMPClient
 
 
@@ -24,7 +30,9 @@ def split_rows(symbol: str, payload: list[dict[str, object]]) -> list[dict[str, 
                     "symbol": symbol,
                     "ex_date": ex_date,
                     "action_type": "split",
-                    "ratio": parse_number(item.get("numerator")) or parse_number(item.get("splitRatio")) or parse_number(item.get("ratio")),
+                    "ratio": parse_number(item.get("numerator"))
+                    or parse_number(item.get("splitRatio"))
+                    or parse_number(item.get("ratio")),
                     "cash_amount": None,
                     "details": item,
                 }
@@ -63,11 +71,15 @@ def event_rows(action_rows: list[dict[str, object]]) -> list[dict[str, object]]:
 
 
 async def fetch_symbol_actions(client: FMPClient, symbol: str) -> list[dict[str, object]]:
-    splits, dividends = await asyncio.gather(client.get_splits(symbol), client.get_dividends(symbol))
+    splits, dividends = await asyncio.gather(
+        client.get_splits(symbol), client.get_dividends(symbol)
+    )
     return split_rows(symbol, splits) + dividend_rows(symbol, dividends)
 
 
-async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False) -> int:
+async def run(
+    engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False
+) -> int:
     del as_of
     engine = engine or create_postgres_engine()
     with engine.begin() as conn:
@@ -77,7 +89,9 @@ async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: 
         return 0
     rows: list[dict[str, object]] = []
     async with FMPClient() as client:
-        results = await asyncio.gather(*(fetch_symbol_actions(client, symbol) for symbol in symbols), return_exceptions=True)
+        results = await asyncio.gather(
+            *(fetch_symbol_actions(client, symbol) for symbol in symbols), return_exceptions=True
+        )
     for symbol, result in zip(symbols, results, strict=True):
         if isinstance(result, Exception):
             logger.exception("Skipping corporate actions for {}", normalize_symbol(symbol))

@@ -13,7 +13,6 @@ import yaml
 from sqlalchemy import bindparam, text
 from sqlalchemy.engine import Connection, Engine
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[5]
 CONFIG_DIR = PROJECT_ROOT / "config"
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")

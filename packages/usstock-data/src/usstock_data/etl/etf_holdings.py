@@ -11,9 +11,15 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from usstock_data.db import create_postgres_engine
-from usstock_data.etl.common import CONFIG_DIR, load_yaml, normalize_symbol, parse_date, parse_number, run_many
+from usstock_data.etl.common import (
+    CONFIG_DIR,
+    load_yaml,
+    normalize_symbol,
+    parse_date,
+    parse_number,
+    run_many,
+)
 from usstock_data.etl.fmp_client import FMPClient
-
 
 LOCAL_TZ = ZoneInfo("Asia/Shanghai")
 HOLDING_WEIGHT_KEYS = ("weight", "weightPercentage", "percentage", "weightPercentageOfNetAssets")
@@ -21,7 +27,13 @@ HOLDING_WEIGHT_KEYS = ("weight", "weightPercentage", "percentage", "weightPercen
 
 def load_etf_universe() -> list[str]:
     payload = load_yaml(CONFIG_DIR / "thresholds.yaml")
-    return sorted({normalize_symbol(item) for item in payload.get("etf_universe", []) if normalize_symbol(item)})
+    return sorted(
+        {
+            normalize_symbol(item)
+            for item in payload.get("etf_universe", [])
+            if normalize_symbol(item)
+        }
+    )
 
 
 def holding_symbol(row: dict[str, object]) -> str:
@@ -39,7 +51,9 @@ def holding_weight(row: dict[str, object]) -> float | None:
     return None
 
 
-def normalize_holding_rows(etf_code: str, raw_rows: list[dict[str, object]], as_of: date) -> list[dict[str, object]]:
+def normalize_holding_rows(
+    etf_code: str, raw_rows: list[dict[str, object]], as_of: date
+) -> list[dict[str, object]]:
     rows_by_symbol: dict[str, dict[str, object]] = {}
     for raw in raw_rows:
         symbol = holding_symbol(raw)
@@ -55,7 +69,9 @@ def normalize_holding_rows(etf_code: str, raw_rows: list[dict[str, object]], as_
     return list(rows_by_symbol.values())
 
 
-async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False) -> int:
+async def run(
+    engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False
+) -> int:
     engine = engine or create_postgres_engine()
     as_of = as_of or datetime.now(LOCAL_TZ).date()
     etfs = load_etf_universe()
@@ -63,7 +79,9 @@ async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: 
     if dry_run:
         return 0
     async with FMPClient() as client:
-        results = await asyncio.gather(*(client.get_etf_holdings(etf) for etf in etfs), return_exceptions=True)
+        results = await asyncio.gather(
+            *(client.get_etf_holdings(etf) for etf in etfs), return_exceptions=True
+        )
     total = 0
     with engine.begin() as conn:
         for etf, result in zip(etfs, results, strict=True):
@@ -71,7 +89,10 @@ async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: 
                 logger.exception("Skipping ETF holdings for {}", etf)
                 continue
             rows = normalize_holding_rows(etf, result, as_of)
-            conn.execute(text("DELETE FROM etf_holdings_latest WHERE etf_code = :etf_code"), {"etf_code": etf})
+            conn.execute(
+                text("DELETE FROM etf_holdings_latest WHERE etf_code = :etf_code"),
+                {"etf_code": etf},
+            )
             total += run_many(
                 conn,
                 """

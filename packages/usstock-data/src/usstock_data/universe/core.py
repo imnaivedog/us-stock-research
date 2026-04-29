@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import date
 from typing import Any
 
 from sqlalchemy import text
@@ -35,7 +34,10 @@ def audit_change(
                 INSERT INTO symbol_universe_changes (
                     symbol, change_type, reason, market_cap, pool, thesis_url, target_market_cap
                 )
-                VALUES (:symbol, :change_type, :reason, :market_cap, :pool, :thesis_url, :target_market_cap)
+                VALUES (
+                    :symbol, :change_type, :reason, :market_cap,
+                    :pool, :thesis_url, :target_market_cap
+                )
                 """
             ),
             {

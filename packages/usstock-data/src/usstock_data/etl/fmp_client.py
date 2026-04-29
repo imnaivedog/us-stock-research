@@ -11,7 +11,6 @@ from typing import Any
 import httpx
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
-
 FMP_BASE_URL = "https://financialmodelingprep.com/stable"
 
 
@@ -46,7 +45,7 @@ class FMPClient:
         self.base_url = base_url.rstrip("/")
         self._client = httpx.AsyncClient(base_url=self.base_url, timeout=httpx.Timeout(60.0))
 
-    async def __aenter__(self) -> "FMPClient":
+    async def __aenter__(self) -> FMPClient:
         return self
 
     async def __aexit__(self, *_exc: object) -> None:
@@ -72,7 +71,9 @@ class FMPClient:
         response.raise_for_status()
         return response.json()
 
-    async def get_historical(self, symbol: str, from_date: str, to_date: str) -> list[dict[str, Any]]:
+    async def get_historical(
+        self, symbol: str, from_date: str, to_date: str
+    ) -> list[dict[str, Any]]:
         payload = await self.request(
             "/historical-price-eod/full",
             params={"symbol": symbol, "from": from_date, "to": to_date},
@@ -111,11 +112,15 @@ class FMPClient:
         return rows if isinstance(rows, list) else []
 
     async def get_income_statement(self, symbol: str, limit: int = 20) -> list[dict[str, Any]]:
-        payload = await self.request("/income-statement", {"symbol": symbol, "period": "quarter", "limit": limit})
+        payload = await self.request(
+            "/income-statement", {"symbol": symbol, "period": "quarter", "limit": limit}
+        )
         return payload if isinstance(payload, list) else []
 
     async def get_cash_flow_statement(self, symbol: str, limit: int = 20) -> list[dict[str, Any]]:
-        payload = await self.request("/cash-flow-statement", {"symbol": symbol, "period": "quarter", "limit": limit})
+        payload = await self.request(
+            "/cash-flow-statement", {"symbol": symbol, "period": "quarter", "limit": limit}
+        )
         return payload if isinstance(payload, list) else []
 
     async def get_earnings_surprises(self, symbol: str) -> list[dict[str, Any]]:

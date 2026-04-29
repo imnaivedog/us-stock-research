@@ -127,29 +127,37 @@ def list_rows(engine: Any, pool: str) -> list[dict[str, Any]]:
 def show_symbol(engine: Any, symbol: str) -> dict[str, Any]:
     symbol = normalize_symbol(symbol)
     with engine.begin() as conn:
-        universe = conn.execute(
-            text(
-                """
+        universe = (
+            conn.execute(
+                text(
+                    """
                 SELECT u.*, w.status AS watchlist_status
                 FROM symbol_universe u
                 LEFT JOIN watchlist w ON w.symbol = u.symbol
                 WHERE u.symbol = :symbol
                 """
-            ),
-            {"symbol": symbol},
-        ).mappings().first()
-        quote = conn.execute(
-            text(
-                """
+                ),
+                {"symbol": symbol},
+            )
+            .mappings()
+            .first()
+        )
+        quote = (
+            conn.execute(
+                text(
+                    """
                 SELECT trade_date, close, adj_close, volume, asset_class
                 FROM quotes_daily
                 WHERE symbol = :symbol
                 ORDER BY trade_date DESC
                 LIMIT 1
                 """
-            ),
-            {"symbol": symbol},
-        ).mappings().first()
+                ),
+                {"symbol": symbol},
+            )
+            .mappings()
+            .first()
+        )
     return {
         "symbol": symbol,
         "universe": dict(universe) if universe else None,
@@ -176,11 +184,23 @@ def render_rows(rows: list[dict[str, Any]], output_format: str) -> None:
         writer.writeheader()
         writer.writerows(rows)
         return
-    columns = ["symbol", "pool", "is_active", "source", "market_cap", "thesis_url", "target_market_cap"]
+    columns = [
+        "symbol",
+        "pool",
+        "is_active",
+        "source",
+        "market_cap",
+        "thesis_url",
+        "target_market_cap",
+    ]
     print(" | ".join(columns))
     print("-" * 96)
     for row in rows:
-        print(" | ".join("" if row.get(column) is None else str(row.get(column)) for column in columns))
+        print(
+            " | ".join(
+                "" if row.get(column) is None else str(row.get(column)) for column in columns
+            )
+        )
 
 
 def manual_m_pool_row(symbol: str, source: str) -> dict[str, Any]:
@@ -210,7 +230,10 @@ def remove_m_pool_symbol(engine: Any, symbol: str, reason: str | None) -> None:
             text(
                 """
                 UPDATE symbol_universe
-                SET is_active = false, removed_date = CURRENT_DATE, last_seen = CURRENT_DATE, updated_at = now()
+                SET is_active = false,
+                    removed_date = CURRENT_DATE,
+                    last_seen = CURRENT_DATE,
+                    updated_at = now()
                 WHERE symbol = :symbol AND pool = 'm'
                 """
             ),

@@ -19,8 +19,12 @@ def fundamentals_rows(
     cash_flow: list[dict[str, object]],
     surprises: list[dict[str, object]],
 ) -> list[dict[str, object]]:
-    cash_by_period = {parse_date(row.get("date") or row.get("period_end")): row for row in cash_flow}
-    surprise_by_period = {parse_date(row.get("date") or row.get("period_end")): row for row in surprises}
+    cash_by_period = {
+        parse_date(row.get("date") or row.get("period_end")): row for row in cash_flow
+    }
+    surprise_by_period = {
+        parse_date(row.get("date") or row.get("period_end")): row for row in surprises
+    }
     rows: list[dict[str, object]] = []
     for item in income:
         period_end = parse_date(item.get("date") or item.get("period_end"))
@@ -32,8 +36,12 @@ def fundamentals_rows(
             {
                 "symbol": symbol,
                 "period_end": period_end,
-                "fiscal_period": str(item.get("period") or item.get("fiscal_period") or "Q").upper(),
-                "reported_at": item.get("reportedCurrencyDate") or item.get("fillingDate") or surprise.get("date"),
+                "fiscal_period": str(
+                    item.get("period") or item.get("fiscal_period") or "Q"
+                ).upper(),
+                "reported_at": item.get("reportedCurrencyDate")
+                or item.get("fillingDate")
+                or surprise.get("date"),
                 "revenue": parse_number(item.get("revenue")),
                 "eps_actual": parse_number(surprise.get("actualEarningResult") or item.get("eps")),
                 "eps_estimate": parse_number(surprise.get("estimatedEarning")),
@@ -55,7 +63,9 @@ async def fetch_symbol_fundamentals(client: FMPClient, symbol: str) -> list[dict
     return fundamentals_rows(symbol, income, cash_flow, surprises)
 
 
-async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False) -> int:
+async def run(
+    engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False
+) -> int:
     del as_of
     engine = engine or create_postgres_engine()
     with engine.begin() as conn:
@@ -65,7 +75,10 @@ async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: 
         return 0
     rows: list[dict[str, object]] = []
     async with FMPClient() as client:
-        results = await asyncio.gather(*(fetch_symbol_fundamentals(client, symbol) for symbol in symbols), return_exceptions=True)
+        results = await asyncio.gather(
+            *(fetch_symbol_fundamentals(client, symbol) for symbol in symbols),
+            return_exceptions=True,
+        )
     for symbol, result in zip(symbols, results, strict=True):
         if isinstance(result, Exception):
             logger.exception("Skipping fundamentals for {}", symbol)

@@ -11,7 +11,6 @@ from usstock_data.db import create_postgres_engine
 from usstock_data.etl.common import normalize_symbol, upsert_rows
 from usstock_data.etl.fmp_client import FMPClient
 
-
 ET_TZ = ZoneInfo("America/New_York")
 
 
@@ -24,7 +23,9 @@ def member_rows(payload: list[dict[str, object]], as_of: date) -> list[dict[str,
     return rows
 
 
-async def run(engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False) -> int:
+async def run(
+    engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False
+) -> int:
     engine = engine or create_postgres_engine()
     as_of = as_of or datetime.now(ET_TZ).date()
     if dry_run:

@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-
 DDL = Path(__file__).parents[1] / "src" / "usstock_data" / "schema" / "ddl.sql"
 
 EXPECTED_TABLES = {
