@@ -47,6 +47,33 @@ def build_parser() -> argparse.ArgumentParser:
     target_parser = subparsers.add_parser("set-target", help="Set a_pool target market cap.")
     target_parser.add_argument("symbol")
     target_parser.add_argument("--target-cap", type=float, required=True)
+
+    a_pool_parser = subparsers.add_parser("a-pool", help="Manage A-pool YAML anchors.")
+    a_pool_sub = a_pool_parser.add_subparsers(dest="a_pool_command", required=True)
+
+    a_add = a_pool_sub.add_parser("add")
+    a_add.add_argument("symbol")
+    a_add.add_argument("--thesis-stop-mcap", type=float, required=True)
+    a_add.add_argument("--target-mcap", type=float, required=True)
+    a_add.add_argument("--themes", required=True)
+    a_add.add_argument("--summary", required=True)
+    a_add.add_argument("--status", choices=["active", "watching", "paused"], default="active")
+
+    a_set_mcap = a_pool_sub.add_parser("set-mcap")
+    a_set_mcap.add_argument("symbol")
+    a_set_mcap.add_argument("--thesis-stop-mcap", type=float, required=True)
+    a_set_mcap.add_argument("--target-mcap", type=float, required=True)
+
+    a_set_themes = a_pool_sub.add_parser("set-themes")
+    a_set_themes.add_argument("symbol")
+    a_set_themes.add_argument("--themes", required=True)
+
+    a_remove = a_pool_sub.add_parser("remove")
+    a_remove.add_argument("symbol")
+
+    a_pool_sub.add_parser("list")
+    a_pool_sub.add_parser("sync")
+    a_pool_sub.add_parser("validate")
     return parser
 
 
@@ -66,15 +93,11 @@ def main(argv: list[str] | None = None) -> int:
         result = asyncio.run(run_sync(args.pool, engine, args.dry_run))
         print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
         return 0
+    if args.command == "a-pool":
+        return run_a_pool_command(args, engine)
     if args.command == "add":
         if args.pool == "a":
-            a_pool.add(
-                args.symbol,
-                engine=engine,
-                thesis_url=args.thesis,
-                target_market_cap=args.target_cap,
-                source=args.source,
-            )
+            raise SystemExit("universe add --pool a is deprecated; use universe a-pool add")
         else:
             m_pool_row = manual_m_pool_row(args.symbol, args.source)
             from usstock_data.universe.core import audit_change, upsert_universe_symbols
@@ -89,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
             remove_m_pool_symbol(engine, args.symbol, args.reason)
         return 0
     if args.command == "set-target":
-        a_pool.set_target(args.symbol, args.target_cap, engine=engine)
+        raise SystemExit("set-target is deprecated; use universe a-pool set-mcap")
         return 0
     parser.error("unknown command")
     return 2
@@ -111,7 +134,7 @@ def list_rows(engine: Any, pool: str) -> list[dict[str, Any]]:
                         u.market_cap,
                         u.adv_20d,
                         u.thesis_url,
-                        u.target_market_cap,
+                        u.thesis_added_at,
                         w.status AS watchlist_status
                     FROM symbol_universe u
                     LEFT JOIN watchlist w ON w.symbol = u.symbol
@@ -191,7 +214,7 @@ def render_rows(rows: list[dict[str, Any]], output_format: str) -> None:
         "source",
         "market_cap",
         "thesis_url",
-        "target_market_cap",
+        "thesis_added_at",
     ]
     print(" | ".join(columns))
     print("-" * 96)
@@ -217,7 +240,6 @@ def manual_m_pool_row(symbol: str, source: str) -> dict[str, Any]:
         "as_of_date": None,
         "filter_reason": "m_pool_manual",
         "thesis_url": None,
-        "target_market_cap": None,
     }
 
 
@@ -240,6 +262,45 @@ def remove_m_pool_symbol(engine: Any, symbol: str, reason: str | None) -> None:
             {"symbol": symbol},
         )
     audit_change(engine, symbol, "removed", pool="m", reason=reason or "m_pool_manual_remove")
+
+
+def _themes_arg(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def run_a_pool_command(args: argparse.Namespace, engine: Any) -> int:
+    command = args.a_pool_command
+    if command == "add":
+        a_pool.add_yaml_entry(
+            args.symbol,
+            thesis_stop_mcap_b=args.thesis_stop_mcap,
+            target_mcap_b=args.target_mcap,
+            themes=_themes_arg(args.themes),
+            summary=args.summary,
+            status=args.status,
+        )
+        return 0
+    if command == "set-mcap":
+        a_pool.set_mcap_yaml(args.symbol, args.thesis_stop_mcap, args.target_mcap)
+        return 0
+    if command == "set-themes":
+        a_pool.set_themes_yaml(args.symbol, _themes_arg(args.themes))
+        return 0
+    if command == "remove":
+        a_pool.remove_yaml_entry(args.symbol)
+        a_pool.remove(args.symbol, engine=engine)
+        return 0
+    if command == "list":
+        print(json.dumps(a_pool.load_entries(), ensure_ascii=False, indent=2, default=str))
+        return 0
+    if command == "sync":
+        print(json.dumps(a_pool.sync(engine=engine), ensure_ascii=False, indent=2, default=str))
+        return 0
+    if command == "validate":
+        a_pool.validate_entries(a_pool.load_entries())
+        print("ok")
+        return 0
+    raise SystemExit(f"unknown a-pool command: {command}")
 
 
 if __name__ == "__main__":

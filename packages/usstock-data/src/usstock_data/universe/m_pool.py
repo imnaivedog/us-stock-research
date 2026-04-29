@@ -54,7 +54,6 @@ def candidate_from_screener(item: dict[str, Any], today: date) -> dict[str, Any]
         "as_of_date": today,
         "filter_reason": "m_pool_auto_curated",
         "thesis_url": None,
-        "target_market_cap": None,
     }
 
 
