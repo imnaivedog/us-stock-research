@@ -9,3 +9,8 @@ data/bad_rows/
 data/logs/
 diagnostic_*/
 cloud-sql-proxy.exe
+
+# 临时备份文件
+*.bak.*
+*.bak
+*.bak.[0-9]*
