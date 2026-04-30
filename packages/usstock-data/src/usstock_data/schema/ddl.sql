@@ -1,3 +1,7 @@
+-- ============================================================
+-- PHASE 1: CREATE TABLE IF NOT EXISTS
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS quotes_daily (
     symbol TEXT NOT NULL,
     trade_date DATE NOT NULL,
@@ -12,8 +16,6 @@ CREATE TABLE IF NOT EXISTS quotes_daily (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (symbol, trade_date)
 );
-
-CREATE INDEX IF NOT EXISTS idx_quotes_asset_class ON quotes_daily(asset_class);
 
 CREATE TABLE IF NOT EXISTS macro_daily (
     trade_date DATE PRIMARY KEY,
@@ -85,10 +87,6 @@ CREATE TABLE IF NOT EXISTS symbol_universe (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_su_active ON symbol_universe(is_active);
-CREATE INDEX IF NOT EXISTS idx_su_last_seen ON symbol_universe(last_seen);
-CREATE INDEX IF NOT EXISTS idx_symbol_universe_pool ON symbol_universe(pool);
-
 CREATE TABLE IF NOT EXISTS symbol_universe_changes (
     id BIGSERIAL PRIMARY KEY,
     symbol VARCHAR NOT NULL REFERENCES symbol_universe(symbol),
@@ -100,9 +98,6 @@ CREATE TABLE IF NOT EXISTS symbol_universe_changes (
     thesis_url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-CREATE INDEX IF NOT EXISTS idx_suc_symbol ON symbol_universe_changes(symbol);
-CREATE INDEX IF NOT EXISTS idx_suc_date ON symbol_universe_changes(change_date);
 
 CREATE TABLE IF NOT EXISTS watchlist (
     symbol VARCHAR PRIMARY KEY REFERENCES symbol_universe(symbol),
@@ -116,9 +111,6 @@ CREATE TABLE IF NOT EXISTS watchlist (
     thesis_url VARCHAR,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-CREATE INDEX IF NOT EXISTS idx_watchlist_status ON watchlist(status);
-CREATE INDEX IF NOT EXISTS idx_watchlist_sector ON watchlist(sector);
 
 CREATE TABLE IF NOT EXISTS daily_indicators (
     symbol VARCHAR NOT NULL,
@@ -155,9 +147,6 @@ CREATE TABLE IF NOT EXISTS daily_indicators (
     PRIMARY KEY (symbol, trade_date)
 );
 
-CREATE INDEX IF NOT EXISTS idx_di_date ON daily_indicators(trade_date);
-CREATE INDEX IF NOT EXISTS idx_di_symbol ON daily_indicators(symbol);
-
 CREATE TABLE IF NOT EXISTS signals_daily (
     trade_date DATE NOT NULL,
     regime CHAR(1) NOT NULL CHECK (regime IN ('S','A','B','C','D')),
@@ -182,10 +171,6 @@ CREATE TABLE IF NOT EXISTS signals_daily (
     PRIMARY KEY (trade_date)
 );
 
-CREATE INDEX IF NOT EXISTS idx_sd_regime ON signals_daily(regime);
-CREATE INDEX IF NOT EXISTS idx_sd_as_of ON signals_daily(as_of_date);
-CREATE INDEX IF NOT EXISTS idx_sd_macro_state ON signals_daily(macro_state);
-
 CREATE TABLE IF NOT EXISTS signals_alerts (
     id BIGSERIAL PRIMARY KEY,
     trade_date DATE NOT NULL,
@@ -203,9 +188,6 @@ CREATE TABLE IF NOT EXISTS signals_alerts (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (trade_date, alert_type, severity)
 );
-
-CREATE INDEX IF NOT EXISTS idx_sa_date ON signals_alerts(trade_date);
-CREATE INDEX IF NOT EXISTS idx_sa_type ON signals_alerts(alert_type);
 
 CREATE TABLE IF NOT EXISTS signals_sectors_daily (
     trade_date DATE NOT NULL,
@@ -260,10 +242,6 @@ CREATE TABLE IF NOT EXISTS signals_stocks_daily (
     PRIMARY KEY (trade_date, symbol)
 );
 
-CREATE INDEX IF NOT EXISTS idx_ssd_score ON signals_sectors_daily(trade_date, total_score DESC);
-CREATE INDEX IF NOT EXISTS idx_std_score ON signals_themes_daily(trade_date, total_score DESC);
-CREATE INDEX IF NOT EXISTS idx_sstd_top ON signals_stocks_daily(trade_date, is_top5);
-
 CREATE TABLE IF NOT EXISTS alert_log (
     id BIGSERIAL PRIMARY KEY,
     job_name TEXT NOT NULL,
@@ -275,8 +253,6 @@ CREATE TABLE IF NOT EXISTS alert_log (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_alert_log_date ON alert_log(trade_date);
-
 CREATE TABLE IF NOT EXISTS corporate_actions (
     symbol TEXT NOT NULL,
     ex_date DATE NOT NULL,
@@ -286,8 +262,6 @@ CREATE TABLE IF NOT EXISTS corporate_actions (
     details JSONB,
     PRIMARY KEY (symbol, ex_date, action_type)
 );
-
-CREATE INDEX IF NOT EXISTS idx_corp_actions_date ON corporate_actions(ex_date);
 
 CREATE TABLE IF NOT EXISTS events_calendar (
     symbol TEXT NOT NULL,
@@ -312,8 +286,6 @@ CREATE TABLE IF NOT EXISTS fundamentals_quarterly (
     PRIMARY KEY (symbol, period_end)
 );
 
-CREATE INDEX IF NOT EXISTS idx_fund_q_reported ON fundamentals_quarterly(reported_at);
-
 CREATE TABLE IF NOT EXISTS themes_master (
     theme_id TEXT PRIMARY KEY,
     name_cn TEXT NOT NULL,
@@ -332,8 +304,6 @@ CREATE TABLE IF NOT EXISTS themes_members (
     PRIMARY KEY (theme_id, symbol)
 );
 
-CREATE INDEX IF NOT EXISTS idx_themes_members_symbol ON themes_members(symbol);
-
 CREATE TABLE IF NOT EXISTS themes_score_daily (
     date DATE NOT NULL,
     theme_id TEXT REFERENCES themes_master(theme_id),
@@ -343,8 +313,6 @@ CREATE TABLE IF NOT EXISTS themes_score_daily (
     member_count INTEGER,
     PRIMARY KEY (date, theme_id)
 );
-
-CREATE INDEX IF NOT EXISTS idx_themes_score_quintile ON themes_score_daily(date, quintile);
 
 CREATE TABLE IF NOT EXISTS a_pool_calibration (
     symbol TEXT PRIMARY KEY,
@@ -369,8 +337,9 @@ CREATE TABLE IF NOT EXISTS signals_a_pool_daily (
     PRIMARY KEY (date, symbol)
 );
 
-CREATE INDEX IF NOT EXISTS idx_signals_a_pool_score
-    ON signals_a_pool_daily(date, a_score DESC);
+-- ============================================================
+-- PHASE 2: ALTER TABLE ADD/DROP COLUMN IF EXISTS
+-- ============================================================
 
 ALTER TABLE quotes_daily ADD COLUMN IF NOT EXISTS asset_class TEXT NOT NULL DEFAULT 'equity';
 ALTER TABLE macro_daily ADD COLUMN IF NOT EXISTS silver NUMERIC(18,4);
@@ -400,3 +369,33 @@ ALTER TABLE alert_log ADD COLUMN IF NOT EXISTS category TEXT;
 ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS target_market_cap NUMERIC;
 ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS thesis_url VARCHAR;
 ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+
+-- ============================================================
+-- PHASE 3: CREATE INDEX IF NOT EXISTS
+-- ============================================================
+
+CREATE INDEX IF NOT EXISTS idx_quotes_asset_class ON quotes_daily(asset_class);
+CREATE INDEX IF NOT EXISTS idx_su_active ON symbol_universe(is_active);
+CREATE INDEX IF NOT EXISTS idx_su_last_seen ON symbol_universe(last_seen);
+CREATE INDEX IF NOT EXISTS idx_symbol_universe_pool ON symbol_universe(pool);
+CREATE INDEX IF NOT EXISTS idx_suc_symbol ON symbol_universe_changes(symbol);
+CREATE INDEX IF NOT EXISTS idx_suc_date ON symbol_universe_changes(change_date);
+CREATE INDEX IF NOT EXISTS idx_watchlist_status ON watchlist(status);
+CREATE INDEX IF NOT EXISTS idx_watchlist_sector ON watchlist(sector);
+CREATE INDEX IF NOT EXISTS idx_di_date ON daily_indicators(trade_date);
+CREATE INDEX IF NOT EXISTS idx_di_symbol ON daily_indicators(symbol);
+CREATE INDEX IF NOT EXISTS idx_sd_regime ON signals_daily(regime);
+CREATE INDEX IF NOT EXISTS idx_sd_as_of ON signals_daily(as_of_date);
+CREATE INDEX IF NOT EXISTS idx_sd_macro_state ON signals_daily(macro_state);
+CREATE INDEX IF NOT EXISTS idx_sa_date ON signals_alerts(trade_date);
+CREATE INDEX IF NOT EXISTS idx_sa_type ON signals_alerts(alert_type);
+CREATE INDEX IF NOT EXISTS idx_ssd_score ON signals_sectors_daily(trade_date, total_score DESC);
+CREATE INDEX IF NOT EXISTS idx_std_score ON signals_themes_daily(trade_date, total_score DESC);
+CREATE INDEX IF NOT EXISTS idx_sstd_top ON signals_stocks_daily(trade_date, is_top5);
+CREATE INDEX IF NOT EXISTS idx_alert_log_date ON alert_log(trade_date);
+CREATE INDEX IF NOT EXISTS idx_corp_actions_date ON corporate_actions(ex_date);
+CREATE INDEX IF NOT EXISTS idx_fund_q_reported ON fundamentals_quarterly(reported_at);
+CREATE INDEX IF NOT EXISTS idx_themes_members_symbol ON themes_members(symbol);
+CREATE INDEX IF NOT EXISTS idx_themes_score_quintile ON themes_score_daily(date, quintile);
+CREATE INDEX IF NOT EXISTS idx_signals_a_pool_score
+    ON signals_a_pool_daily(date, a_score DESC);

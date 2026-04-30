@@ -27,6 +27,7 @@ reports -> analytics -> data
 
 - 下层永远不 import 上层。
 - schema 变更走 DDL / migration，不写进业务代码。
+- `ddl.sql` 顺序固定为 CREATE TABLE -> ALTER TABLE ADD/DROP COLUMN -> CREATE INDEX，保证旧表先补列再建索引。
 - 生产历史数据受保护；destructive migration 必须先得到用户明确批准并备份。
 - MCP 返回 raw structured data，不做 narrative 包装。
 - CLI 入口经 `usstock_data.db` 自动读取 repo root `.env`；显式 shell env 优先，不被覆盖。
