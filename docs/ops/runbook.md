@@ -1,22 +1,22 @@
 # Runbook
 
-LightOS operations reference. User runs these commands; Codex does not SSH.
+LightOS 运维参考。用户执行这些命令；Codex 不 SSH。
 
 ## Runtime
 
-- OS: LightOS.
-- User: `naivedog`.
-- Repo: `~/us-stock-research/`.
-- Python/venv: uv-managed `.venv/`.
-- Postgres: 17 on `localhost:5432`, database `usstock`.
-- Logs: `~/logs/`.
-- Backups: `/lzcapp/document/usstock-backups/`.
-- System timezone: UTC. User-facing time usually Asia/Shanghai.
-- `.env`: repo root, permission 600, user-owned.
+- OS：LightOS。
+- User：`naivedog`。
+- Repo：`~/us-stock-research/`。
+- Python / venv：uv 管理的 `.venv/`。
+- Postgres：17，`localhost:5432`，database `usstock`。
+- Logs：`~/logs/`。
+- Backups：`/lzcapp/document/usstock-backups/`。
+- 系统时区：UTC。用户展示通常用 Asia/Shanghai。
+- `.env`：repo root，权限 600，用户保管。
 
-Environment keys Codex may reference by name only: `DATABASE_URL`, `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `FMP_API_KEY`, `FRED_API_KEY`, `POLYGON_API_KEY`, `NOTION_TOKEN`, `NOTION_DAILY_DB_ID`, `DISCORD_WEBHOOK_URL`, `LOG_LEVEL`, `PYTHONUNBUFFERED`.
+Codex 只能引用这些环境变量名，不能接触实际值：`DATABASE_URL`、`POSTGRES_HOST`、`POSTGRES_PORT`、`POSTGRES_DB`、`POSTGRES_USER`、`POSTGRES_PASSWORD`、`FMP_API_KEY`、`FRED_API_KEY`、`POLYGON_API_KEY`、`NOTION_TOKEN`、`NOTION_DAILY_DB_ID`、`DISCORD_WEBHOOK_URL`、`LOG_LEVEL`、`PYTHONUNBUFFERED`。
 
-## Manual Daily
+## 手动 daily
 
 ```bash
 cd ~/us-stock-research
@@ -31,15 +31,15 @@ uv run --package usstock-analytics usstock-analytics signals --date 2026-04-29 -
 uv run --package usstock-reports usstock-reports daily --date 2026-04-29 --no-discord
 ```
 
-## Universe Sync
+## universe sync
 
 ```bash
 uv run --package usstock-data usstock-data universe sync
 ```
 
-Expected at cutover: M pool around 1784 active, A pool 0 until user fills `config/a_pool.yaml`.
+cutover 预期：M 池约 1784 active，用户填写 `config/a_pool.yaml` 前 A 池为 0。
 
-## Logs
+## 日志
 
 ```bash
 tail -f ~/logs/daily-$(date +%F).log
@@ -47,7 +47,7 @@ grep ERROR ~/logs/daily-$(date +%F).log
 ls -lt ~/logs/ | head
 ```
 
-## Alert Triage
+## alert 排障
 
 ```sql
 SELECT created_at, severity, job_name, category, symbol, LEFT(message, 120) AS msg
@@ -63,7 +63,7 @@ GROUP BY job_name, severity
 ORDER BY n DESC;
 ```
 
-## Row Count Triage
+## 行数排障
 
 ```sql
 SELECT 'quotes_daily' AS t, COUNT(*) AS n FROM quotes_daily WHERE trade_date = '2026-04-29'
@@ -73,23 +73,23 @@ UNION ALL SELECT 'symbol_universe(active)', COUNT(*) FROM symbol_universe WHERE 
 UNION ALL SELECT 'themes_score_daily', COUNT(*) FROM themes_score_daily WHERE trade_date = '2026-04-29';
 ```
 
-## Cron
+## cron
 
-UTC:
+UTC：
 
 ```cron
 30 22 * * 1-5 /home/naivedog/scripts/daily.sh >> /home/naivedog/logs/daily-$(date +\%F).log 2>&1
 0 20 * * 6 /home/naivedog/scripts/weekly_backup.sh >> /home/naivedog/logs/backup-$(date +\%F).log 2>&1
 ```
 
-Asia/Shanghai equivalent:
+Asia/Shanghai 等价：
 
 ```text
-daily: 06:30 Tue-Sat
-backup: 04:00 Sun
+daily: Tue-Sat 06:30
+backup: Sun 04:00
 ```
 
-Install/update scripts:
+安装或更新 scripts：
 
 ```bash
 cp ~/us-stock-research/deploy/daily.sh ~/scripts/
@@ -99,16 +99,16 @@ crontab -l
 crontab -e
 ```
 
-## Backup
+## backup
 
 ```bash
 bash ~/scripts/weekly_backup.sh
 ls -lh /lzcapp/document/usstock-backups/ | tail
 ```
 
-## Rollback
+## rollback
 
-Prefer code revert over history rewriting:
+代码优先用 revert，不改写历史：
 
 ```bash
 cd ~/us-stock-research
@@ -117,7 +117,7 @@ git revert <bad-commit>
 uv sync
 ```
 
-Database restore is severe and user-owned:
+数据库 restore 是严重操作，属于用户保留事项：
 
 ```bash
 cd /tmp
@@ -125,9 +125,9 @@ gunzip -k /lzcapp/document/usstock-backups/usstock-YYYY-MM-DD.sql.gz
 PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -d "$POSTGRES_DB" < /tmp/usstock-YYYY-MM-DD.sql
 ```
 
-Never ask Codex to reset secrets. `.env` restore is user-owned.
+不要让 Codex 重置 secrets。`.env` restore 由用户处理。
 
-## Useful SQL
+## 常用 SQL
 
 ```sql
 SELECT MAX(trade_date) FROM quotes_daily;
@@ -154,13 +154,11 @@ ORDER BY rank
 LIMIT 10;
 ```
 
-## When Reporting An Incident To Codex
+## 向 Codex 报 incident 时贴这些
 
-Paste:
+- 跑过的 command 和 exit code。
+- 最后 50 行 log。
+- alert 排障 query。
+- 行数排障 query。
 
-- Command run and exit code.
-- Last 50 log lines.
-- Alert triage query.
-- Row count triage query.
-
-Do not paste secrets.
+不要贴 secrets。

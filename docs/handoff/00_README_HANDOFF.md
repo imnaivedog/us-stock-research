@@ -1,18 +1,18 @@
-# Handoff Entry
+# Handoff 入口
 
-Start at `docs/README.md`. This file is intentionally short so there is only one real docs entry point.
+先读 `docs/README.md`。本页刻意保持很短，避免出现两个真正的 docs 入口。
 
-Current phase:
+当前阶段：
 
-- Stage 0 docs restructure: done in this commit, pending user review.
-- Do not start P1 until the user approves the docs restructure.
-- P1 source: `docs/handoff/04_V5_PLUS_1_TASKBOOK.md`.
-- Cutover state and remaining commands: `docs/handoff/cutover.md`.
-- User-owned boundaries: `docs/handoff/USER_OWNED.md`.
+- 阶段 0 docs restructure 已完成，等待用户 review。
+- 用户批准前，不进入 P1。
+- P1 来源：`docs/handoff/04_V5_PLUS_1_TASKBOOK.md`。
+- cutover 状态与剩余命令：`docs/handoff/cutover.md`。
+- 用户保留边界：`docs/handoff/USER_OWNED.md`。
 
-Non-negotiables:
+硬边界：
 
-- `_raw/` stays read-only.
-- `USER_OWNED.md` stays user-owned.
-- Codex does not SSH to LightOS.
-- Code changes must update docs in the same commit when behavior changes.
+- `_raw/` 只读。
+- `USER_OWNED.md` 用户保留。
+- Codex 不 SSH LightOS。
+- 代码行为变更时，同 commit 更新 docs。

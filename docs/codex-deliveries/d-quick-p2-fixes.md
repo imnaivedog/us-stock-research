@@ -1,4 +1,4 @@
-# D-quick P2 Fixes
+# D-quick P2 修复记录
 
 ## 提交链(commit hash)
 

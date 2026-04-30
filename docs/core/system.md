@@ -1,36 +1,36 @@
 # System
 
-Codex-facing system reference for `us-stock-research`. This file merges the old logic, architecture, stock-pool, and principles pages. Full design history remains in `_raw/`.
+Codex 面向的系统参考页。它合并了旧的 core logic、architecture、stock pool、principles。完整设计历史仍保留在 `_raw/`。
 
-## Project Shape
+## 项目定位
 
-Personal US stock research assistant for daily swing-trading signals and long-thesis timing. It does not trade, manage real cash, serve multiple users, or run intraday/high-frequency strategies.
+个人美股研究助手，用于日级 swing-trading 信号和 long-thesis 技术择时。它不交易、不管理真实资金、不服务多用户、不做 intraday / high-frequency。
 
-Core principle: smart data, dumb code. Keep data complete and inspectable; keep analytics easy to change; keep output boring.
+核心原则：smart data, dumb code。数据尽量完整可查；analytics 便于热改；output 保持朴素。
 
-## Package Layers
+## Package 层级
 
-Dependency direction is one-way:
+依赖方向单向：
 
 ```text
 reports -> analytics -> data
 ```
 
-| Layer | Package | Role |
+| Layer | Package | 职责 |
 | --- | --- | --- |
-| Data | `usstock-data` | ETL, universe sync, `daily_indicators`, schema migration helpers |
-| Analytics | `usstock-analytics` | M pool signals, A pool signals, themes, scoring, backtest, queries |
-| Reports | `usstock-reports` | Notion row/page, Discord webhook, daily formatting |
-| Query | `usstock-mcp` | Read-only MCP tools for Hermes and other clients |
+| Data | `usstock-data` | ETL、universe sync、`daily_indicators`、schema migration helpers |
+| Analytics | `usstock-analytics` | M 池 signals、A 池 signals、themes、scoring、backtest、queries |
+| Reports | `usstock-reports` | Notion row/page、Discord webhook、daily formatting |
+| Query | `usstock-mcp` | 给 Hermes 和其它 client 的 read-only MCP tools |
 
-Rules:
+规则：
 
-- Lower layers never import upper layers.
-- Schema changes go through schema DDL/migration, not business code.
-- Existing production data is protected; destructive migrations require explicit user approval and backup.
-- MCP returns raw structured data, never narrative wrapping.
+- 下层永远不 import 上层。
+- schema 变更走 DDL / migration，不写进业务代码。
+- 生产历史数据受保护；destructive migration 必须先得到用户明确批准并备份。
+- MCP 返回 raw structured data，不做 narrative 包装。
 
-## Data Flow
+## 数据流
 
 ```text
 FMP / FRED / Polygon or Massive / yfinance fallback
@@ -45,15 +45,15 @@ FMP / FRED / Polygon or Massive / yfinance fallback
   -> MCP: read-only query surface
 ```
 
-Daily output follows ADR-033: no NAV block, no simulated-pool position block, no cloud-run simulated trading section. Backtest is local CLI only.
+daily output 遵守 ADR-033：不含 NAV block、不含模拟盘仓位 block、不含云端模拟交易段。backtest 仅作为本地 CLI。
 
-## Tables
+## 数据表
 
-The implementation SoT is the repo schema. Conceptually V5.7 uses:
+实现 SoT 以 repo schema 为准。V5.7 概念上使用：
 
-| Area | Tables |
+| 范围 | Tables |
 | --- | --- |
-| Prices and macro | `quotes_daily`, `quotes_intraday`, `macro_daily` |
+| 行情与宏观 | `quotes_daily`, `quotes_intraday`, `macro_daily` |
 | Universe | `symbol_universe`, `symbol_universe_changes`, `sp500_members_daily`, `etf_holdings_latest`, `etf_holdings_snapshot` |
 | Derived | `daily_indicators` |
 | Themes | `themes_master`, `themes_members`, `themes_score_daily` |
@@ -62,13 +62,13 @@ The implementation SoT is the repo schema. Conceptually V5.7 uses:
 | A signals | `a_pool_calibration`, `signals_a_pool_daily` |
 | Ops | `alert_log` |
 
-`daily_indicators` is M/A shared and must be read with `trade_date <= :as_of_date` in backtest-like contexts to avoid look-ahead bias.
+`daily_indicators` 是 M/A 共享表。backtest 类场景读取时必须带 `trade_date <= :as_of_date`，避免 look-ahead bias。
 
-## Field Contracts
+## 字段契约
 
-`daily_indicators` is the shared technical feature table. V1 fields are grouped as:
+`daily_indicators` 是共享技术特征表。V1 字段分组：
 
-| Group | Fields |
+| 分组 | Fields |
 | --- | --- |
 | Identity | `symbol`, `trade_date`, `computed_at` |
 | Moving averages | `sma_5`, `sma_10`, `sma_20`, `sma_50`, `sma_200`, `ema_12`, `ema_26` |
@@ -81,27 +81,27 @@ The implementation SoT is the repo schema. Conceptually V5.7 uses:
 | Position | `pct_to_52w_high`, `pct_to_52w_low`, `pct_to_200ma` |
 | Relative / slope | `beta_60d`, `ma200_slope_20d` |
 
-M signal outputs:
+M signal 输出：
 
 | Table | Contract |
 | --- | --- |
-| `signals_daily` | One row per day: `regime`, `regime_streak`, breadth fields, `sectors_top3`, `themes_top3`, `alert_count`, `macro_scenario`, `macro_btc_status` |
-| `signals_stock_daily` | One row per symbol/day: `technical_score`, `sector_bonus`, `theme_bonus`, `final_score`, `rank`, `regime`, `entry_signal`, `exit_signal`, `warning_signal` |
-| `signals_alerts` | Breadth/risk alerts from L2 and related daily warnings |
-| `signals_macro` | 8 macro scenarios plus BTC risk-on/off confirmation |
+| `signals_daily` | 每日一行：`regime`, `regime_streak`, breadth fields, `sectors_top3`, `themes_top3`, `alert_count`, `macro_scenario`, `macro_btc_status` |
+| `signals_stock_daily` | 每 symbol / day 一行：`technical_score`, `sector_bonus`, `theme_bonus`, `final_score`, `rank`, `regime`, `entry_signal`, `exit_signal`, `warning_signal` |
+| `signals_alerts` | L2 breadth / risk alerts 与相关 daily warnings |
+| `signals_macro` | 8 个 macro scenarios + BTC risk-on/off confirmation |
 
-## M Pool
+## M 池
 
-M pool is the short-term momentum pool.
+M 池是短线动量池。
 
-Universe source and filters:
+Universe 来源与过滤：
 
-- Sources: IVV + IJH + IJR + QQQ foreign members + Renaissance IPO ETF + Hermes/manual additions.
-- Hard filters: market cap >= $1B, 20D average dollar volume >= $10M, `ipoDate >= 90d`, `actively_trading = true`.
-- Dedup priority: IVV > IJH > IJR > QQQ_intl > IPO > Hermes > manual.
-- Override SoT: `config/m_pool_overrides.yaml`.
+- 来源：IVV + IJH + IJR + QQQ foreign members + Renaissance IPO ETF + Hermes/manual additions。
+- 硬过滤：market cap >= $1B，20D average dollar volume >= $10M，`ipoDate >= 90d`，`actively_trading = true`。
+- 去重优先级：IVV > IJH > IJR > QQQ_intl > IPO > Hermes > manual。
+- override SoT：`config/m_pool_overrides.yaml`。
 
-Signal engine modules:
+Signal engine modules：
 
 | Module | Output |
 | --- | --- |
@@ -113,57 +113,57 @@ Signal engine modules:
 
 ## L1 Regime
 
-Five risk dials:
+五档 risk dial：
 
-| Dial | Position | Meaning |
+| Dial | Position | 含义 |
 | --- | --- | --- |
-| S | 120% | Offensive |
-| A | 100% | Standard |
-| B | 80% | Discounted |
-| C | 60% | Defensive |
-| D | 20% | Trial exposure, not full cash |
+| S | 120% | 进攻 |
+| A | 100% | 标准 |
+| B | 80% | 打折 |
+| C | 60% | 防守 |
+| D | 20% | 试水，不是 full cash |
 
-S dial trigger:
+S 档触发：
 
-- All 4 hard gates:
-  - SPY at new high or <= 3% from monthly high.
-  - 200MA breadth >= P85 over 5 years.
-  - VIX < P20 and 10-day average < P30.
-  - No FOMC / CPI / NFP / election in the next 7 days.
-- At least 1 momentum confirmation:
-  - 50MA breadth >= 70%.
-  - NH/NL >= 3.
-  - McClellan Oscillator >= +50.
-- Confirmation: all gates + one momentum condition for 3 consecutive trading days.
+- 4 个 hard gates 全部满足：
+  - SPY 当日新高，或距月线新高 <= 3%。
+  - 200MA breadth >= 5Y P85。
+  - VIX < P20 且 10-day average < P30。
+  - 未来 7 日无 FOMC / CPI / NFP / election。
+- 至少 1 个 momentum confirmation：
+  - 50MA breadth >= 70%。
+  - NH/NL >= 3。
+  - McClellan Oscillator >= +50。
+- 时间确认：hard gates + 任一 momentum condition 连续 3 个交易日成立。
 
-Cooldown:
+Cooldown：
 
-- A -> S requires at least 5 trading days since leaving S.
-- Adjacent A/B/C/D same-direction changes require at least 2 trading days.
-- S -> A is immediate when any hard gate breaks.
-- Extreme events such as VIX +30% day can bypass adjacent cooldown.
+- A -> S：距上次离开 S 至少 5 个交易日。
+- A/B/C/D 相邻同向切换：至少间隔 2 个交易日。
+- S -> A：任一 hard gate 破坏时立即降档。
+- VIX 单日 +30% 等 extreme events 可绕过相邻 cooldown。
 
 ## L2 Breadth
 
-Key thresholds:
+关键阈值：
 
-- 200MA breadth: 5-year P80 / P50 / P20.
-- 50MA extreme: 5-year P95 / P5.
-- 50MA warning bands: P90-P95 yellow, P95+ red.
-- 50MA dulling: 2-year P75+ for consecutive days.
-- Acceleration: 5-day change in 50MA breadth.
-- Confirmation ladder: 1 day observe, 2 days warning, 3 days dial input, 5 days structural.
-- Top divergence: index makes 20-day high while breadth fails to make high by >5%.
-- Bottom reversal: VIX falls from P95+ to below P80 and breadth rebounds from P5 to P20+.
-- McClellan is auxiliary, not a standalone dial trigger.
+- 200MA breadth：5Y P80 / P50 / P20。
+- 50MA extreme：5Y P95 / P5。
+- 50MA warning bands：P90-P95 yellow，P95+ red。
+- 50MA dulling：2Y P75+ 连续多日。
+- Acceleration：50MA breadth 的 5-day change。
+- Confirmation ladder：1 日观察，2 日 warning，3 日进入 dial input，5 日视为 structural。
+- Top divergence：指数创 20-day high，但 breadth 未创新高且差 >5%。
+- Bottom reversal：VIX 从 P95+ 回落到 P80 以下，同时 breadth 从 P5 反转到 P20+。
+- McClellan 是辅助指标，不单独触发 dial。
 
 ## L3 Sectors
 
-11 SPDR sectors score on five dimensions: price trend, relative strength, breadth, flow, volatility.
+11 个 SPDR sectors 按五维评分：price trend、relative strength、breadth、flow、volatility。
 
-Quadrant mapping uses two tracks and takes the more conservative result:
+象限映射使用双轨，并取更保守结果：
 
-| Relative rank among 11 | Candidate quadrant |
+| 11 个 sector 内相对排名 | Candidate quadrant |
 | --- | --- |
 | 1-2 | Leading |
 | 3-4 | Strong |
@@ -171,64 +171,64 @@ Quadrant mapping uses two tracks and takes the more conservative result:
 | 8-9 | Weak |
 | 10-11 | Lagging |
 
-| Sector own 5-year percentile | Highest allowed quadrant |
+| sector 自身 5Y percentile | 允许最高象限 |
 | --- | --- |
 | >= P70 | Leading |
 | P50-P70 | Strong |
 | P30-P50 | Neutral |
 | < P30 | Weak |
 
-L3 is observational. It can add a sector bonus to L4 but cannot by itself create a buy signal.
+L3 只观察。它可以给 L4 sector bonus，但不能单独产生 buy signal。
 
 ## L4 Themes And Stocks
 
-Theme SoT is `config/themes.yaml`.
+Theme SoT 是 `config/themes.yaml`。
 
-Theme basket segments:
+Theme basket segments：
 
-- V4/V5.7 launch weights: core 70%, diffusion 30%, concept 0%.
-- V5 target weights: core 60%, diffusion 30%, concept 10%.
+- V4/V5.7 launch weights：core 70%，diffusion 30%，concept 0%。
+- V5 target weights：core 60%，diffusion 30%，concept 10%。
 
-Theme state thresholds:
+Theme state thresholds：
 
-- Embryonic -> start: core RS > P70, theme volume share > 5%, at least 3 core names break out together.
-- Start -> accelerate: theme score top 3, core 50MA bullish alignment > 80%.
-- Volume yellow: 1-year P80 and 20D average volume >= 3-month average x 2.
-- Volume red: 1-year P95 and 20D average volume >= 3-month average x 3 plus bearish next-day candle after volume expansion.
-- Themes aged 6-12 months use age-to-date window and mark sample-insufficient; themes under 6 months skip volume warning.
-- Accelerate -> decay: red volume control plus 3 days without new high, or core RS falls below P50 together.
+- Embryonic -> start：core RS > P70，theme volume share > 5%，至少 3 个 core names 同步 breakout。
+- Start -> accelerate：theme score top 3，core 50MA bullish alignment > 80%。
+- Volume yellow：1Y P80 且 20D average volume >= 3-month average x 2。
+- Volume red：1Y P95 且 20D average volume >= 3-month average x 3，并且放量后次日收阴。
+- 成立 6-12 个月的 themes 用 age-to-date window，并标记样本不足；不足 6 个月则跳过 volume warning。
+- Accelerate -> decay：red volume control + 3 日不创新高，或 core RS 集体跌破 P50。
 
-M stock score contract:
+M stock score contract：
 
 ```text
 final_score = technical_score + sector_bonus + theme_bonus
 ```
 
-The persisted row includes `symbol`, `as_of_date`, `technical_score`, `sector_bonus`, `theme_bonus`, `final_score`, `rank`, `regime`, `entry_signal`, `exit_signal`, and `warning_signal`.
+持久化行包含 `symbol`, `as_of_date`, `technical_score`, `sector_bonus`, `theme_bonus`, `final_score`, `rank`, `regime`, `entry_signal`, `exit_signal`, `warning_signal`。
 
-## A Pool
+## A 池
 
-A pool is long-thesis timing, not position management. It gives technical timing and R:R context for user-owned theses.
+A 池是 long-thesis timing，不是 position management。它给用户 thesis 提供技术择时和 R:R 上下文。
 
-SoT:
+SoT：
 
-- `config/a_pool.yaml` is the only source for thesis fields.
-- DB mirrors only `pool`, `is_active`, and `thesis_added_at`.
-- Do not mirror `thesis_stop_mcap_b`, `target_mcap_b`, `themes`, or `thesis_summary` into SQL.
+- `config/a_pool.yaml` 是 thesis 字段唯一来源。
+- DB 仅镜像 `pool`、`is_active`、`thesis_added_at`。
+- 不把 `thesis_stop_mcap_b`、`target_mcap_b`、`themes`、`thesis_summary` 镜像到 SQL。
 
-YAML field semantics:
+YAML 字段语义：
 
-| Field | Meaning |
+| Field | 含义 |
 | --- | --- |
-| `symbol` | Uppercase ticker |
-| `status` | `active`, `watching`, or `removed`; only `active` is scored |
-| `added` | `YYYY-MM-DD`, used for thesis aging |
-| `thesis_stop_mcap_b` | Thesis invalidation market cap in USD billions; required for `active` |
-| `target_mcap_b` | 3-5 year thesis target market cap in USD billions; required for `active` |
-| `themes` | Must all exist in `config/themes.yaml`; sync fails fast with line/theme detail |
-| `thesis_summary` | Human/LLM context; user-owned business text |
+| `symbol` | 大写 ticker |
+| `status` | `active`, `watching`, `removed`；只有 `active` 会评分 |
+| `added` | `YYYY-MM-DD`，用于 thesis aging |
+| `thesis_stop_mcap_b` | thesis 失效市值，单位 USD billions；`active` 必填 |
+| `target_mcap_b` | 3-5Y thesis 目标市值，单位 USD billions；`active` 必填 |
+| `themes` | 必须全部存在于 `config/themes.yaml`；sync fail-fast 并给出 line/theme detail |
+| `thesis_summary` | 人读 / LLM context；业务文字由用户维护 |
 
-Runtime mcap conversion:
+runtime mcap conversion：
 
 ```python
 thesis_stop_price = thesis_stop_mcap_b * 1e9 / shares_outstanding
@@ -236,82 +236,82 @@ target_price = target_mcap_b * 1e9 / shares_outstanding
 strategic_rr = (target_price - close) / (close - thesis_stop_price)
 ```
 
-If `shares_outstanding` is null, the symbol goes hold and writes `alert_log` WARN.
+如果 `shares_outstanding` 为 null，该 symbol 当日走 hold，并写 `alert_log` WARN。
 
-## A Pool Signals
+## A 池 Signals
 
-V5.7 extends ADR-030's original 11-signal design to 12 signals by adding `theme_oversold_entry`.
+V5.7 把 ADR-030 原 11-signal design 扩为 12 signals，新增 `theme_oversold_entry`。
 
-| ID | Meaning |
+| ID | 含义 |
 | --- | --- |
-| B1 | Pullback confirmation: pullback near typical profile range and close > 200MA |
-| B2 | Breakout: close makes 60D high and volume > 1.5 x 20D average |
-| B3 | Oversold reversal: RSI14 below per-symbol RSI P5 |
-| B4 | MACD golden cross, fresh enough and at least 60D from previous cross |
-| B5 | Strong support rebound: close near a calibrated support and closes green |
-| S1 | Breaks support: below nearest strong support and >2% breach |
-| S2a | Fast death cross: MA20 below MA50 |
-| S2b | Slow death cross: MA50 below MA200 |
-| S3 | Price/volume divergence: 60D high with RSI/volume divergence |
-| W1 | Overheated: RSI14 > per-symbol P95 for 3D |
-| W2 | Thesis aging: added >3y and close < target_price x 0.5 |
-| theme_oversold_entry | A linked theme is bottom-quintile for 4W, price is > thesis_stop_price x 1.3, and recent B5 support fires |
+| B1 | 回踩确认：pullback 接近画像 typical range，且 close > 200MA |
+| B2 | 突破：close 创 60D high，且 volume > 1.5 x 20D average |
+| B3 | 超卖反转：RSI14 低于 per-symbol RSI P5 |
+| B4 | MACD golden cross，且足够新鲜，并距上次 cross 至少 60D |
+| B5 | 强支撑反弹：close 接近 calibrated support 且收阳 |
+| S1 | 跌破支撑：跌破最近 strong support 且 breach >2% |
+| S2a | fast death cross：MA20 下穿 MA50 |
+| S2b | slow death cross：MA50 下穿 MA200 |
+| S3 | 价量背离：60D high 伴随 RSI / volume divergence |
+| W1 | 过热：RSI14 > per-symbol P95 连续 3D |
+| W2 | thesis aging：added >3y 且 close < target_price x 0.5 |
+| theme_oversold_entry | 关联 theme 连续 4W bottom-quintile，price > thesis_stop_price x 1.3，且近期触发 B5 support |
 
-Every signal needs a human explanation and a historical reference when available.
+每个 signal 在可用时都需要 human explanation 和 historical reference。
 
-## A Pool Scoring
+## A 池 Scoring
 
 ```text
 A_Score = elasticity * 0.35 + value * 0.30 + rr * 0.35
 ```
 
-Elasticity:
+Elasticity：
 
-- ATR% cross-sectional percentile: 40%.
-- Beta segment: 30%.
-- 20D sigma cross-sectional percentile: 30%.
+- ATR% cross-sectional percentile：40%。
+- Beta segment：30%。
+- 20D sigma cross-sectional percentile：30%。
 
-Value:
+Value：
 
-- Distance from 52W low: 30%.
-- Distance from 200MA: 30%.
-- Drawdown depth: 40%.
-- Multiply by trend-health coefficient 0.50-1.00 based on 200MA 20D slope.
+- 距 52W low：30%。
+- 距 200MA：30%。
+- Drawdown depth：40%。
+- 再乘 trend-health coefficient 0.50-1.00，基于 200MA 20D slope。
 
-R:R:
+R:R：
 
-- Strategic R:R filters add attempts; if <2, do not add.
-- Tactical R:R is scored using next resistance and tactical stop.
-- Tactical stop = max(50MA x 0.95, entry x 0.92, recent 20D support).
-- Score tiers: >=3.0 => 85-100; 2.0-3.0 => 60-85; 1.5-2.0 => 30-60; <1.5 => 0.
+- Strategic R:R 只过滤加仓；若 <2，不加仓。
+- Tactical R:R 真正参与打分，使用 next resistance 与 tactical stop。
+- tactical stop = max(50MA x 0.95, entry x 0.92, recent 20D support)。
+- Score tiers：>=3.0 => 85-100；2.0-3.0 => 60-85；1.5-2.0 => 30-60；<1.5 => 0。
 
-Adjustments:
+Adjustments：
 
-- >=2 B signals: +5.
-- Any dimension <50: -10.
-- Theme quintile top: +5.
-- Theme bottom plus `theme_oversold_entry`: +3.
-- Final range clamps to [0, 100].
+- >=2 个 B signals：+5。
+- 任一维度 <50：-10。
+- Theme quintile top：+5。
+- Theme bottom + `theme_oversold_entry`：+3。
+- 最终 clamp 到 [0, 100]。
 
 ## Reports
 
-Notion daily:
+Notion daily：
 
-- Row properties: date, regime, regime streak, SPY/VIX/macro summary, top themes/stocks, alert count.
-- Page body: header, macro, L1, L2, L3, ETF top, stock top, A pool highlights, risk notes.
-- Excludes simulated NAV and simulated positions per ADR-033.
+- Row properties：date、regime、regime streak、SPY/VIX/macro summary、top themes/stocks、alert count。
+- Page body：header、macro、L1、L2、L3、ETF top、stock top、A pool highlights、risk notes。
+- 按 ADR-033 排除 simulated NAV 和 simulated positions。
 
-Discord daily:
+Discord daily：
 
-- One-line dial.
-- ETF Top 3.
-- M pool stock Top 5.
-- A pool highlights when present.
-- Up to 5 key alerts.
+- 一行 dial。
+- ETF Top 3。
+- M 池 Stock Top 5。
+- A pool highlights（若有）。
+- 最多 5 条 key alerts。
 
 ## MCP Contract
 
-The read-only MCP tools are:
+read-only MCP tools：
 
 | Tool | Contract |
 | --- | --- |
@@ -320,12 +320,12 @@ The read-only MCP tools are:
 | `get_top_stocks` | `(pool: "m"|"a", as_of?: date, limit?: int)` -> ranked stock/signal rows |
 | `query_signals` | `(symbol: str, days?: int)` -> raw signal history |
 
-Do not add write tools without a new ADR and user approval.
+没有新 ADR 和用户批准，不增加 write tools。
 
-## Maintenance Principles
+## 维护原则
 
-- Add less than you think. If a feature fails the "will I maintain this in 3 months?" test, do not add it.
-- Prefer reusing current tables before adding tables.
-- Keep CLI behavior idempotent and rerunnable.
-- Do not use LightOS as a development shell. Reproduce locally, then let the user deploy.
-- User owns credentials, LightOS operations, A-pool thesis numbers, and Notion/Hermes side setup.
+- 少加东西。过不了“3 个月后还愿不愿意维护？”测试，就不要加。
+- 加表前优先想能不能复用现有表。
+- CLI 行为保持 idempotent、可重跑。
+- 不把 LightOS 当 dev shell。本地复现，用户再部署。
+- 用户负责 credentials、LightOS ops、A 池 thesis numbers、Notion/Hermes 侧 setup。

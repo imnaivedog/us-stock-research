@@ -1,16 +1,16 @@
-# M2-S1 Curate Universe
+# M2-S1 Universe Curation
 
-## Commit Chain
+## commit chain
 
 - `0232d8f` feat(db): add universe change tracking schema (ADR-029)
 - `65c66a8` feat(jobs): implement curate_universe weekly job
 - `50cd126` feat(deploy): wire curate-universe to Cloud Run + Scheduler
 
-## Self-Check
+## 自查
 
-### Migration SQL Empty Schema
+### migration SQL 空 schema
 
-Command: run `db/schema.sql` plus `sql/migrations/2026_04_27_add_universe_change_tracking.sql` up block inside temporary dev schema `codex_m2s1_emptycheck`.
+Command：在临时 dev schema `codex_m2s1_emptycheck` 中执行 `db/schema.sql`，再执行 `sql/migrations/2026_04_27_add_universe_change_tracking.sql` 的 up block。
 
 ```text
 DROP SCHEMA
@@ -40,9 +40,9 @@ COMMIT
 DROP SCHEMA
 ```
 
-### Migration SQL Dev Idempotency
+### migration SQL dev 幂等性
 
-Command: run migration up block twice against dev `public` schema.
+Command：在 dev `public` schema 上连续执行两次 migration up block。
 
 ```text
 BEGIN
@@ -78,11 +78,11 @@ COMMIT
 (1 row)
 ```
 
-### Dry Run
+### dry-run
 
 Command: `$env:PYTHONPATH='src'; uv run python -m us_stock.jobs.curate_universe --dry-run --no-alert`
 
-Before dev integration:
+dev integration 前：
 
 ```text
 [INFO] FMP screener returned 2067 symbols (market_cap >= 1B)
@@ -95,7 +95,7 @@ Before dev integration:
 [INFO] Final active count: 2067
 ```
 
-After dev integration:
+dev integration 后：
 
 ```text
 [INFO] FMP screener returned 2067 symbols (market_cap >= 1B)
@@ -108,9 +108,9 @@ After dev integration:
 [INFO] Final active count: 2067
 ```
 
-### Pytest
+### pytest
 
-Command: `uv run pytest`
+Command：`uv run pytest`
 
 ```text
 collected 9 items
@@ -121,22 +121,22 @@ tests\test_etf_holdings_bad_weights.py ...                               [100%]
 ======================== 9 passed, 3 warnings in 1.17s ========================
 ```
 
-### Deploy YAML Syntax
+### deploy YAML syntax
 
-Command: local PyYAML parse for both deploy specs.
+Command：本地用 PyYAML 解析两个 deploy specs。
 
 ```text
 deploy/cloud_run_jobs.yaml: ok (dict)
 deploy/cloud_scheduler.yaml: ok (dict)
 ```
 
-`gcloud run jobs replace ... --dry-run` was not available in installed SDK command surface; command returned `unrecognized arguments: --dry-run`. No production deployment was executed.
+已安装 SDK 的 command surface 不支持 `gcloud run jobs replace ... --dry-run`；命令返回 `unrecognized arguments: --dry-run`。未执行 production deployment。
 
-## Dev Integration
+## dev integration
 
 Command: `$env:PYTHONPATH='src'; uv run python -m us_stock.jobs.curate_universe --no-alert`
 
-Before:
+执行前：
 
 ```text
  active_before_integration 
@@ -150,7 +150,7 @@ Before:
 (1 row)
 ```
 
-Run:
+执行：
 
 ```text
 [INFO] FMP screener returned 2067 symbols (market_cap >= 1B)
@@ -163,7 +163,7 @@ Run:
 [INFO] Final active count: 2067
 ```
 
-After:
+执行后：
 
 ```text
  active_after_integration 
@@ -177,7 +177,7 @@ After:
 (1 row)
 ```
 
-Audit sample:
+audit sample：
 
 ```text
  symbol | change_date | change_type |     reason     | market_cap  
@@ -189,10 +189,10 @@ Audit sample:
  ABXL   | 2026-04-27  | added       | market_cap>=1B |  2515182117
 ```
 
-## 📦 实施反馈
+## 实施反馈
 
-- Existing schema uses `symbol_universe.is_active`, not `active`. I kept the existing column and created `idx_su_active ON symbol_universe(is_active)` instead of adding an `active` column.
-- Dev database does not currently have a `watchlist` table. The job treats missing `watchlist` as an empty watchlist and logs a warning; no watchlist DDL is added to this PR.
-- FMP stable screener endpoint that returned data was `/stable/company-screener`; `/stable/stock-screener` failed in dry-run. The job uses `company-screener` with `marketCapMoreThan`, `isActivelyTrading`, `isEtf=false`, `isFund=false`, `country=US`, `exchangeShortName=NASDAQ,NYSE,AMEX`, and `limit=10000`.
-- Initial dev integration without ETF/fund filters returned 5680 rows and included mutual funds. That run was rolled back with the requested 2026-04-27 audit/delete SQL, then rerun with the filtered screener.
-- Cloud Run/Scheduler YAML was parsed locally. The installed `gcloud run jobs replace` command did not support `--dry-run`, so no gcloud mutation command was run.
+- 现有 schema 使用 `symbol_universe.is_active`，不是 `active`。因此保留现有列，并创建 `idx_su_active ON symbol_universe(is_active)`，没有新增 `active` 列。
+- dev database 当时没有 `watchlist` 表。job 将缺失的 `watchlist` 视为空 watchlist 并记录 warning；本 PR 不新增 watchlist DDL。
+- FMP stable screener 可返回数据的 endpoint 是 `/stable/company-screener`；`/stable/stock-screener` 在 dry-run 中失败。job 使用 `company-screener`，参数包括 `marketCapMoreThan`、`isActivelyTrading`、`isEtf=false`、`isFund=false`、`country=US`、`exchangeShortName=NASDAQ,NYSE,AMEX`、`limit=10000`。
+- 初次 dev integration 未加 ETF/fund filters，返回 5680 行且包含 mutual funds。该运行已按要求用 2026-04-27 audit/delete SQL 回滚，然后用 filtered screener 重跑。
+- Cloud Run/Scheduler YAML 已在本地解析。已安装的 `gcloud run jobs replace` 不支持 `--dry-run`，因此未执行任何 gcloud mutation command。
