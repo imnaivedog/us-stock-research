@@ -1,0 +1,69 @@
+[
+  {
+    "date": "2026-04-30",
+    "symbol": "NVDA",
+    "signals": {
+      "b1": {"triggered": true, "strength": 0.7},
+      "b5": {"triggered": true, "strength": 0.5},
+      "theme_oversold_entry": {
+        "triggered": true,
+        "strength": 0.4,
+        "theme_quintile": "top"
+      }
+    },
+    "a_score": 85,
+    "score_breakdown": {
+      "entry_moderate": 95,
+      "entry_conservative": 88,
+      "stop_shallow": 82,
+      "stop_deep": 76,
+      "short_target": 125,
+      "strategic_rr": 3.25
+    },
+    "verdict_text": "英伟达 A 池信号积极，算力主题仍在 top 分位，适合继续观察分批入场。",
+    "verdict_source": "llm",
+    "thesis_stop_price": 80,
+    "target_price": 140
+  },
+  {
+    "date": "2026-04-30",
+    "symbol": "AMD",
+    "signals": {
+      "b1": {"triggered": true, "strength": 0.4},
+      "s2b": {"triggered": false, "theme_quintile": "upper"}
+    },
+    "a_score": 72,
+    "score_breakdown": {
+      "entry_moderate": 105,
+      "entry_conservative": 98,
+      "stop_shallow": 91,
+      "stop_deep": 86,
+      "short_target": 132,
+      "strategic_rr": 2.4
+    },
+    "verdict_text": "AMD 回撤后性价比改善，但相对强度仍弱于 NVDA，适合小仓观察。",
+    "verdict_source": "fallback",
+    "thesis_stop_price": 90,
+    "target_price": 135
+  },
+  {
+    "date": "2026-04-30",
+    "symbol": "SNOW",
+    "signals": {
+      "b1": {"triggered": false, "strength": 0.0}
+    },
+    "a_score": 45,
+    "score_breakdown": {
+      "entry_moderate": 130,
+      "entry_conservative": 120,
+      "stop_shallow": 110,
+      "stop_deep": 100,
+      "short_target": 150,
+      "strategic_rr": 1.1
+    },
+    "verdict_text": "SNOW 当前分数不足，等待更深折价。",
+    "verdict_source": "fallback",
+    "thesis_stop_price": 100,
+    "target_price": 170
+  }
+]

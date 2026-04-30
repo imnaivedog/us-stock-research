@@ -1,0 +1,32 @@
+{
+  "date": "2026-04-30",
+  "daily": {
+    "trade_date": "2026-04-30",
+    "regime": "A",
+    "regime_streak": 3,
+    "regime_changed": false,
+    "breadth_pct_above_200ma": 58.2,
+    "breadth_pct_above_50ma": 63.1,
+    "breadth_pct_above_20ma": 61.4,
+    "breadth_nh_nl_ratio": 1.8,
+    "breadth_mcclellan": 42.5,
+    "breadth_score": 76,
+    "macro_state": "risk_on",
+    "as_of_date": "2026-04-30"
+  },
+  "alerts": [
+    {"alert_type": "ZWEIG_BREADTH_THRUST", "severity": "YELLOW"}
+  ],
+  "sectors": [
+    {"symbol": "XLK", "rank_relative": 1, "total_score": 91.2, "quadrant": "LEADING"},
+    {"symbol": "XLF", "rank_relative": 2, "total_score": 84.4, "quadrant": "STRONG"}
+  ],
+  "themes": [
+    {"theme_id": "theme_ai_compute", "theme_name": "AI Compute", "rank": 1, "total_score": 88.5, "state": "ACCELERATING"},
+    {"theme_id": "theme_semiconductor", "theme_name": "Semiconductors", "rank": 2, "total_score": 82.1, "state": "LAUNCHING"}
+  ],
+  "stocks": [
+    {"symbol": "NVDA", "rank": 1, "total_score": 94.0, "entry_pattern": "PULLBACK"},
+    {"symbol": "MSFT", "rank": 2, "total_score": 89.5, "entry_pattern": "BREAKOUT"}
+  ]
+}
