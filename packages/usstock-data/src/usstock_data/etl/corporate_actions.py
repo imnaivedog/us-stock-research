@@ -17,7 +17,7 @@ from usstock_data.etl.common import (
     run_many,
     upsert_rows,
 )
-from usstock_data.etl.fmp_client import FMPClient
+from usstock_data.etl.fmp_client import FMPClient, FMPTransientError
 
 
 def split_rows(symbol: str, payload: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -77,6 +77,44 @@ async def fetch_symbol_actions(client: FMPClient, symbol: str) -> list[dict[str,
     return split_rows(symbol, splits) + dividend_rows(symbol, dividends)
 
 
+def collect_action_results(
+    symbols: list[str], results: list[list[dict[str, object]] | BaseException | None]
+) -> tuple[list[dict[str, object]], int, int]:
+    rows: list[dict[str, object]] = []
+    success_count = 0
+    skip_count = 0
+    total = len(symbols)
+    for symbol, result in zip(symbols, results, strict=True):
+        normalized_symbol = normalize_symbol(symbol)
+        if result is None:
+            skip_count += 1
+            logger.debug("corporate_actions skip {}: empty response", normalized_symbol)
+        elif isinstance(result, FMPTransientError):
+            skip_count += 1
+            logger.opt(exception=result).error("corporate_actions failed for {}", normalized_symbol)
+        elif isinstance(result, Exception):
+            skip_count += 1
+            logger.opt(exception=result).debug("corporate_actions skip {}", normalized_symbol)
+        else:
+            success_count += 1
+            rows.extend(result)
+
+        if skip_count and skip_count % 200 == 0:
+            logger.info(
+                "corporate_actions: skipped {}/{}, success {}",
+                skip_count,
+                total,
+                success_count,
+            )
+    logger.info(
+        "corporate_actions done: {} success / {} skipped / {} total",
+        success_count,
+        skip_count,
+        total,
+    )
+    return rows, success_count, skip_count
+
+
 async def run(
     engine: Engine | None = None, as_of: date | None = None, dry_run: bool = False
 ) -> int:
@@ -92,11 +130,7 @@ async def run(
         results = await asyncio.gather(
             *(fetch_symbol_actions(client, symbol) for symbol in symbols), return_exceptions=True
         )
-    for symbol, result in zip(symbols, results, strict=True):
-        if isinstance(result, Exception):
-            logger.exception("Skipping corporate actions for {}", normalize_symbol(symbol))
-            continue
-        rows.extend(result)
+    rows, _success_count, _skip_count = collect_action_results(symbols, results)
     written = upsert_rows(
         engine,
         "corporate_actions",

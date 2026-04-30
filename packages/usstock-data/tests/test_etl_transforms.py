@@ -2,9 +2,16 @@ from __future__ import annotations
 
 from datetime import date
 
-from usstock_data.etl.corporate_actions import dividend_rows, event_rows, split_rows
+from loguru import logger
+from usstock_data.etl.corporate_actions import (
+    collect_action_results,
+    dividend_rows,
+    event_rows,
+    split_rows,
+)
 from usstock_data.etl.earnings_calendar import calendar_rows
-from usstock_data.etl.fundamentals import fundamentals_rows
+from usstock_data.etl.fmp_client import FMPTransientError
+from usstock_data.etl.fundamentals import collect_fundamental_results, fundamentals_rows
 from usstock_data.etl.macro_daily import build_macro_rows
 from usstock_data.etl.quotes_daily import quote_rows
 from usstock_data.etl.shares_outstanding import row_from_polygon_response, warn_row
@@ -117,3 +124,57 @@ def test_shares_outstanding_etl_skips_null_response_with_warn() -> None:
     alert = warn_row("nvda", "missing")
     assert alert["severity"] == "WARN"
     assert alert["category"] == "shares_outstanding"
+
+
+def test_corporate_actions_skip_expected_exception_without_error_log() -> None:
+    messages: list[str] = []
+    sink_id = logger.add(messages.append, level="DEBUG", format="{level}:{message}")
+    try:
+        rows, success_count, skip_count = collect_action_results(
+            ["AAPL", "MSFT"], [[{"symbol": "AAPL"}], RuntimeError("tier unsupported")]
+        )
+    finally:
+        logger.remove(sink_id)
+
+    assert rows == [{"symbol": "AAPL"}]
+    assert success_count == 1
+    assert skip_count == 1
+    text = "\n".join(messages)
+    assert "ERROR:" not in text
+    assert "DEBUG:corporate_actions skip MSFT" in text
+    assert "INFO:corporate_actions done: 1 success / 1 skipped / 2 total" in text
+
+
+def test_fundamentals_skip_expected_exception_without_error_log() -> None:
+    messages: list[str] = []
+    sink_id = logger.add(messages.append, level="DEBUG", format="{level}:{message}")
+    try:
+        rows, success_count, skip_count = collect_fundamental_results(
+            ["AAPL", "MSFT"], [[{"symbol": "AAPL"}], RuntimeError("tier unsupported")]
+        )
+    finally:
+        logger.remove(sink_id)
+
+    assert rows == [{"symbol": "AAPL"}]
+    assert success_count == 1
+    assert skip_count == 1
+    text = "\n".join(messages)
+    assert "ERROR:" not in text
+    assert "DEBUG:fundamentals skip MSFT" in text
+    assert "INFO:fundamentals done: 1 success / 1 skipped / 2 total" in text
+
+
+def test_fundamentals_transient_exception_still_logs_error() -> None:
+    messages: list[str] = []
+    sink_id = logger.add(messages.append, level="DEBUG", format="{level}:{message}")
+    try:
+        rows, success_count, skip_count = collect_fundamental_results(
+            ["AAPL"], [FMPTransientError("FMP transient status 429")]
+        )
+    finally:
+        logger.remove(sink_id)
+
+    assert rows == []
+    assert success_count == 0
+    assert skip_count == 1
+    assert "ERROR:fundamentals failed for AAPL" in "\n".join(messages)
