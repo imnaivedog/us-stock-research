@@ -57,6 +57,10 @@ def snapshot_from_history(
     shares_outstanding: float | None,
     theme_quintile: str = "mid",
     theme_quintile_prev: str = "mid",
+    theme_bottom_days: int = 0,
+    days_since_earnings: int | None = None,
+    post_earnings_drop_pct: float | None = None,
+    corporate_action_flags: list[str] | None = None,
 ) -> APoolSnapshot:
     df = history.sort_values("trade_date").copy()
     latest = df.iloc[-1]
@@ -83,6 +87,10 @@ def snapshot_from_history(
         target_mcap_b=float(entry["target_mcap_b"]),
         theme_quintile=theme_quintile,
         theme_quintile_prev=theme_quintile_prev,
+        theme_bottom_days=theme_bottom_days,
+        days_since_earnings=days_since_earnings,
+        post_earnings_drop_pct=post_earnings_drop_pct or 0.0,
+        corporate_action_flags=corporate_action_flags or [],
     )
 
 
@@ -161,11 +169,38 @@ def load_symbol_metadata(engine: Engine, symbols: list[str]) -> dict[str, dict[s
         return {str(row["symbol"]): dict(row) for row in rows}
 
 
-def load_theme_quintiles(
+def _row_value(row: Any, key: str, index: int) -> Any:
+    if hasattr(row, "_mapping"):
+        return row._mapping[key]
+    if isinstance(row, dict):
+        return row[key]
+    return row[index]
+
+
+def primary_theme_by_symbol(entries: list[dict[str, Any]]) -> dict[str, str]:
+    result = {}
+    for item in entries:
+        themes = item.get("themes") or []
+        if themes:
+            result[str(item["symbol"])] = str(themes[0])
+    return result
+
+
+def bottom_streak(rows: list[tuple[date, str]]) -> int:
+    count = 0
+    for _row_date, quintile in sorted(rows, key=lambda item: item[0], reverse=True):
+        if quintile != "bottom":
+            break
+        count += 1
+    return count
+
+
+def load_theme_history(
     engine: Engine,
     trade_date: date,
     entries: list[dict[str, Any]],
-) -> dict[str, str]:
+) -> dict[str, dict[str, Any]]:
+    """Returns {symbol: {quintile, quintile_prev, bottom_days}}."""
     theme_ids = sorted({theme for item in entries for theme in item.get("themes", [])})
     if not theme_ids:
         return {}
@@ -173,20 +208,117 @@ def load_theme_quintiles(
         rows = conn.execute(
             text(
                 """
-                SELECT theme_id, quintile
+                SELECT date, theme_id, quintile
                 FROM themes_score_daily
-                WHERE date = :trade_date AND theme_id = ANY(:theme_ids)
+                WHERE theme_id = ANY(:theme_ids)
+                  AND date <= :trade_date
+                  AND date >= :trade_date - interval '30 days'
+                ORDER BY theme_id, date DESC
                 """
             ),
             {"trade_date": trade_date, "theme_ids": theme_ids},
         ).all()
-    quintile_by_theme = {str(theme_id): str(quintile) for theme_id, quintile in rows}
+    rows_by_theme: dict[str, list[tuple[date, str]]] = {}
+    for row in rows:
+        row_date = _row_value(row, "date", 0)
+        theme_id = str(_row_value(row, "theme_id", 1))
+        quintile = str(_row_value(row, "quintile", 2))
+        rows_by_theme.setdefault(theme_id, []).append((row_date, quintile))
+
+    primary_themes = primary_theme_by_symbol(entries)
     result = {}
-    for item in entries:
-        for theme_id in item.get("themes", []):
-            if theme_id in quintile_by_theme:
-                result[str(item["symbol"])] = quintile_by_theme[theme_id]
-                break
+    for symbol, theme_id in primary_themes.items():
+        series = sorted(rows_by_theme.get(theme_id, []), key=lambda item: item[0], reverse=True)
+        if not series:
+            continue
+        today = next((item for item in series if item[0] == trade_date), series[0])
+        prev = next((item for item in series if item[0] < trade_date), today)
+        result[symbol] = {
+            "quintile": today[1],
+            "quintile_prev": prev[1],
+            "bottom_days": bottom_streak(series),
+        }
+    return result
+
+
+def load_recent_earnings(
+    engine: Engine,
+    symbols: list[str],
+    trade_date: date,
+) -> dict[str, dict[str, Any]]:
+    if not symbols:
+        return {}
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT ec.symbol, ec.event_date,
+                       q_event.close AS event_close,
+                       q_now.close AS current_close
+                FROM events_calendar ec
+                JOIN quotes_daily q_event
+                  ON q_event.symbol = ec.symbol AND q_event.trade_date = ec.event_date
+                JOIN quotes_daily q_now
+                  ON q_now.symbol = ec.symbol AND q_now.trade_date = :trade_date
+                WHERE ec.symbol = ANY(:symbols)
+                  AND ec.event_type = 'earnings'
+                  AND ec.event_date <= :trade_date
+                  AND ec.event_date >= :trade_date - interval '30 days'
+                ORDER BY ec.symbol, ec.event_date DESC
+                """
+            ),
+            {"symbols": symbols, "trade_date": trade_date},
+        ).all()
+    result = {}
+    for row in rows:
+        symbol = str(_row_value(row, "symbol", 0))
+        if symbol in result:
+            continue
+        event_date = _row_value(row, "event_date", 1)
+        event_close = float(_row_value(row, "event_close", 2) or 0)
+        current_close = float(_row_value(row, "current_close", 3) or 0)
+        drop_pct = 0.0 if event_close <= 0 else (current_close / event_close - 1) * 100
+        result[symbol] = {
+            "days_since": (trade_date - event_date).days,
+            "drop_pct": drop_pct,
+        }
+    return result
+
+
+def load_corporate_action_flags(
+    engine: Engine,
+    symbols: list[str],
+    trade_date: date,
+) -> dict[str, list[str]]:
+    if not symbols:
+        return {}
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT symbol, action_type
+                FROM corporate_actions
+                WHERE symbol = ANY(:symbols)
+                  AND ex_date <= :trade_date
+                  AND ex_date >= :trade_date - interval '30 days'
+                ORDER BY symbol, ex_date DESC
+                """
+            ),
+            {"symbols": symbols, "trade_date": trade_date},
+        ).all()
+    mapping = {
+        "split": "split",
+        "secondary_offering": "large_dilution",
+        "dilution": "large_dilution",
+        "dividend_cut": "dividend_cut",
+    }
+    result: dict[str, list[str]] = {}
+    for row in rows:
+        symbol = str(_row_value(row, "symbol", 0))
+        action_type = str(_row_value(row, "action_type", 1))
+        flag = mapping.get(action_type, action_type)
+        if flag not in result.setdefault(symbol, []):
+            result[symbol].append(flag)
     return result
 
 
@@ -271,7 +403,9 @@ def run(
     active_symbols = [item["symbol"] for item in entries]
     metadata = load_symbol_metadata(engine, active_symbols)
     history = load_history(engine, active_symbols, trade_date)
-    theme_quintiles = load_theme_quintiles(engine, trade_date, entries)
+    theme_data = load_theme_history(engine, trade_date, entries)
+    earnings = load_recent_earnings(engine, active_symbols, trade_date)
+    ca_flags = load_corporate_action_flags(engine, active_symbols, trade_date)
     rows = []
     for entry in entries:
         symbol = entry["symbol"]
@@ -280,11 +414,18 @@ def run(
         if symbol_history.empty:
             logger.warning("Skipping {}: missing quote history for {}", symbol, trade_date)
             continue
+        td = theme_data.get(symbol, {})
+        ev = earnings.get(symbol, {})
         snapshot = snapshot_from_history(
             entry=entry,
             history=symbol_history,
             shares_outstanding=meta.get("shares_outstanding"),
-            theme_quintile=theme_quintiles.get(symbol, "mid"),
+            theme_quintile=td.get("quintile", "mid"),
+            theme_quintile_prev=td.get("quintile_prev", "mid"),
+            theme_bottom_days=td.get("bottom_days", 0),
+            days_since_earnings=ev.get("days_since"),
+            post_earnings_drop_pct=ev.get("drop_pct"),
+            corporate_action_flags=ca_flags.get(symbol, []),
         )
         calibration = calibration_from_mapping(meta)
         row = build_daily_row(
