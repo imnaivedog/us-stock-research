@@ -105,6 +105,17 @@ def compute_scores(
     trade_date: date,
     params: dict[str, Any],
 ) -> list[dict[str, Any]]:
+    """Compute themes_score_daily for ONE trade_date only.
+
+    Per V5.7 §5.2.5 + memo §9: produced-and-consumed-same-day · NEVER backfill
+    historical dates · missing days stay missing forever. A-pool signals
+    depending on a missing theme score MUST hold that day · do NOT fallback to
+    yesterday's score(would silently change trading signals).
+
+    Theme momentum is recomputed daily from rolling member returns(5d/20d/60d
+    weighted) · so backfilling with old prices would be both wrong(stale ranks)
+    and dangerous(retro-active signal mutation).
+    """
     members_by_theme = load_theme_members(engine)
     all_symbols = sorted({symbol for members in members_by_theme.values() for symbol in members})
     returns = member_returns(load_prices(engine, all_symbols, trade_date), trade_date)
@@ -147,6 +158,8 @@ def run(engine: Engine | None = None, trade_date: date | None = None) -> int:
     if trade_date is None:
         raise ValueError("trade_date is required")
     engine = engine or create_postgres_engine()
+    # Produce-and-consume-same-day only: callers must pass the current trade date,
+    # and missing theme scores should remain missing instead of being backfilled.
     rows = compute_scores(engine, trade_date, load_params())
     return upsert_scores(engine, rows)
 
