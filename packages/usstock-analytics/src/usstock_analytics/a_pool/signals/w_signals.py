@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from usstock_analytics.a_pool.signals.models import APoolSnapshot, signal
 
-
 QUINTILE_ORDER = {"top": 4, "upper": 3, "mid": 2, "lower": 1, "bottom": 0}
 
 

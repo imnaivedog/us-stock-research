@@ -7,7 +7,6 @@ from usstock_analytics.a_pool.signals.orchestrator import evaluate_signals
 from usstock_analytics.a_pool.signals.s_signals import s2a_thesis_break_mcap
 from usstock_analytics.a_pool.signals.theme_signals import theme_oversold_entry
 
-
 CAL = Calibration(rsi14_p20=30, rsi14_p80=70, drawdown_p10=-0.20)
 
 
