@@ -22,10 +22,18 @@ def _load_repo_dotenv(env_file: Path = _ENV_FILE) -> bool:
 _load_repo_dotenv()
 
 
+def _normalize_db_url(url: str) -> str:
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url
+
+
 def database_url_from_env() -> str:
     direct_url = os.getenv("DATABASE_URL", "").strip()
     if direct_url:
-        return direct_url
+        return _normalize_db_url(direct_url)
 
     user = os.getenv("POSTGRES_USER", "postgres")
     password = os.getenv("POSTGRES_PASSWORD", "")
@@ -45,4 +53,8 @@ def database_url_from_env() -> str:
 
 
 def create_postgres_engine(database_url: str | None = None) -> Engine:
-    return create_engine(database_url or database_url_from_env(), pool_pre_ping=True, future=True)
+    return create_engine(
+        _normalize_db_url(database_url or database_url_from_env()),
+        pool_pre_ping=True,
+        future=True,
+    )

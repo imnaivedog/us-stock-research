@@ -28,3 +28,24 @@ def test_load_dotenv_keeps_existing_env(tmp_path, monkeypatch) -> None:
 def test_repo_root_points_to_workspace() -> None:
     assert db._REPO_ROOT.name == "us-stock-research"
     assert (db._REPO_ROOT / "packages" / "usstock-data").exists()
+
+
+def test_normalize_db_url_postgresql() -> None:
+    assert db._normalize_db_url("postgresql://u:p@h/d") == "postgresql+psycopg://u:p@h/d"
+
+
+def test_normalize_db_url_already_psycopg() -> None:
+    assert (
+        db._normalize_db_url("postgresql+psycopg://u:p@h/d")
+        == "postgresql+psycopg://u:p@h/d"
+    )
+
+
+def test_normalize_db_url_heroku_postgres() -> None:
+    assert db._normalize_db_url("postgres://u:p@h/d") == "postgresql+psycopg://u:p@h/d"
+
+
+def test_database_url_from_env_normalizes_direct_url(monkeypatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@h/d")
+
+    assert db.database_url_from_env() == "postgresql+psycopg://u:p@h/d"
