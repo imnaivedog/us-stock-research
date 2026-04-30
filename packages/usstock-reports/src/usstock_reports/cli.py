@@ -25,7 +25,7 @@ def main(argv: list[str] | None = None) -> int:
             no_discord=daily_args.no_discord,
         )
         print(result)
-        return 0
+        return int(result.get("discord_exit_code") or 0)
     parser.error("unknown command")
     return 2
 

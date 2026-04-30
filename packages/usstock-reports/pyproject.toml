@@ -10,6 +10,7 @@ dependencies = [
   "pandas==2.3.3",
   "psycopg[binary]==3.2.3",
   "PyYAML==6.0.2",
+  "requests==2.33.1",
   "SQLAlchemy==2.0.36",
 ]
 

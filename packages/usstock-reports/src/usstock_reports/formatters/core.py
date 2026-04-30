@@ -58,13 +58,19 @@ def position_for_regime(regime: str | None) -> float | None:
     return POSITION_MAP.get(regime)
 
 
+def format_percent(value: Any) -> str:
+    if value is None:
+        return "N/A"
+    return f"{float(decimal_to_float(value)) * 100:.0f}%"
+
+
 def truncate_verdict(text: str | None, limit: int = 220) -> str:
     if not text:
         return ""
     clean = " ".join(str(text).split())
     if len(clean) <= limit:
         return clean
-    return f"{clean[: limit - 1]}…"
+    return f"{clean[: limit - 3]}..."
 
 
 def triggered_signal_codes(signals: dict[str, Any] | None) -> list[str]:

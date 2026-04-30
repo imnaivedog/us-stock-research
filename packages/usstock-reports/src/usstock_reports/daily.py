@@ -11,6 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from usstock_reports.db import create_postgres_engine
+from usstock_reports.discord.webhook import send_discord_report
 from usstock_reports.notion.client import RetryingNotionClient
 from usstock_reports.notion.page_writer import write_page_body
 from usstock_reports.notion.row_writer import upsert_daily_row, write_alert_log
@@ -142,7 +143,12 @@ def run_daily(
 ) -> dict[str, Any]:
     engine = engine or create_postgres_engine()
     report = load_daily_report(engine, trade_date)
-    result = {"date": trade_date.isoformat(), "notion_page_id": None, "discord": "skipped"}
+    result = {
+        "date": trade_date.isoformat(),
+        "notion_page_id": None,
+        "discord": "skipped",
+        "discord_exit_code": 0,
+    }
     if not no_notion:
         result["notion_page_id"] = write_notion_report(
             report,
@@ -151,4 +157,8 @@ def run_daily(
         )
     if no_discord:
         result["discord"] = "skipped"
+    else:
+        discord_exit_code = send_discord_report(report, engine=engine)
+        result["discord_exit_code"] = discord_exit_code
+        result["discord"] = "sent" if discord_exit_code == 0 else "failed"
     return result
