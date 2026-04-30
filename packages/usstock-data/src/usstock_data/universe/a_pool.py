@@ -90,8 +90,13 @@ def validate_entries(
     *,
     a_pool_path: Path = DEFAULT_A_POOL_PATH,
     themes_path: Path = DEFAULT_THEMES_PATH,
+    master_theme_ids: set[str] | None = None,
 ) -> None:
-    allowed = registered_theme_ids(themes_path)
+    allowed = (
+        master_theme_ids
+        if master_theme_ids is not None
+        else registered_theme_ids(themes_path)
+    )
     for item in entries:
         symbol = normalize_symbol(item.get("symbol"))
         for theme_id in item.get("themes") or []:
@@ -178,10 +183,14 @@ def remove_yaml_entry(symbol: str, *, path: Path = DEFAULT_A_POOL_PATH) -> list[
     return entries
 
 
-def mirror_to_db(engine: Engine | None = None, path: Path = DEFAULT_A_POOL_PATH) -> dict[str, int]:
+def mirror_to_db(
+    engine: Engine | None = None,
+    path: Path = DEFAULT_A_POOL_PATH,
+    master_theme_ids: set[str] | None = None,
+) -> dict[str, int]:
     engine = engine_or_default(engine)
     entries = load_entries(path)
-    validate_entries(entries, a_pool_path=path)
+    validate_entries(entries, a_pool_path=path, master_theme_ids=master_theme_ids)
     active_rows = []
     for item in entries:
         symbol = normalize_symbol(item.get("symbol"))
@@ -229,5 +238,9 @@ def remove(symbol: str, *, engine: Engine | None = None, reason: str | None = No
     audit_change(engine, symbol, "removed", pool="a", reason=reason or "a_pool_yaml_remove")
 
 
-def sync(engine: Engine | None = None) -> dict[str, int]:
-    return mirror_to_db(engine=engine)
+def sync(
+    engine: Engine | None = None,
+    path: Path = DEFAULT_A_POOL_PATH,
+    master_theme_ids: set[str] | None = None,
+) -> dict[str, int]:
+    return mirror_to_db(engine=engine, path=path, master_theme_ids=master_theme_ids)
