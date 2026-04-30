@@ -270,6 +270,7 @@ CREATE TABLE IF NOT EXISTS alert_log (
     symbol TEXT,
     trade_date DATE,
     severity TEXT NOT NULL,
+    category TEXT,
     message TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

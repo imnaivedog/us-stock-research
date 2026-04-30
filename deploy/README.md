@@ -89,18 +89,28 @@ the DB in place. The next good deploy can continue from the same database.
 | A-pool signals empty | `config/a_pool.yaml` has `status: active`; `usstock-data universe sync` passed | Re-run universe sync and then `usstock-analytics a-pool signals --date YYYY-MM-DD` |
 | Discord does not send | `DISCORD_WEBHOOK_URL`; `alert_log` where `job_name='reports.discord'` | Rotate/reset the webhook URL and rerun reports |
 | Notion write fails | `NOTION_TOKEN`; `NOTION_DAILY_DB_ID`; integration database permissions | Reconnect the Notion integration and rerun reports |
+| atexit PermissionError（Win 本地 pytest 噪音） | exit code 是否为 0 | exit code 是 0 就忽略，跟踪到 V5+1，不阻塞生产 |
 
 ## Cron
 
-LightOS uses UTC cron.
+先跑 `timedatectl` 确认系统时区。
+
+UTC 系统时区版本：
 
 ```cron
 30 22 * * 1-5 /home/naivedog/scripts/daily.sh
 0  20 * * 6   /home/naivedog/scripts/weekly_backup.sh
 ```
 
-The first line is CST Tuesday-Saturday 06:30 and processes the previous UTC day,
-which corresponds to the prior US trading session for this workflow.
+Asia/Shanghai 系统时区版本：
+
+```cron
+30 6 * * 2-6 /home/naivedog/scripts/daily.sh
+0  4 * * 0   /home/naivedog/scripts/weekly_backup.sh
+```
+
+The daily cron processes the previous UTC day, which corresponds to the prior US
+trading session for this workflow.
 
 ## Environment
 
