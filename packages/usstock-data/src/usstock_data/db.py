@@ -3,9 +3,23 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
+from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine
 from sqlalchemy.engine import Engine
+
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+_ENV_FILE = _REPO_ROOT / ".env"
+
+
+def _load_repo_dotenv(env_file: Path = _ENV_FILE) -> bool:
+    if not env_file.exists():
+        return False
+    return load_dotenv(env_file)
+
+
+_load_repo_dotenv()
 
 
 def database_url_from_env() -> str:

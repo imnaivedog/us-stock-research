@@ -29,6 +29,7 @@ reports -> analytics -> data
 - schema 变更走 DDL / migration，不写进业务代码。
 - 生产历史数据受保护；destructive migration 必须先得到用户明确批准并备份。
 - MCP 返回 raw structured data，不做 narrative 包装。
+- CLI 入口经 `usstock_data.db` 自动读取 repo root `.env`；显式 shell env 优先，不被覆盖。
 
 ## 数据流
 
