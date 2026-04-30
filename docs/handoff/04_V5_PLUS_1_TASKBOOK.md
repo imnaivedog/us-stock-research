@@ -320,7 +320,7 @@ def test_corporate_actions_skip_on_none(caplog):
 
 V5.7 cutover 期间发现 5 个代码 bug 阻塞 schema migrate / daily ETL。Cutover 用兜底命令绕过 · V5+1 修补包永久修。
 
-## 5 个 bug 速查（详见 docs/handoff/03_KNOWN_ISSUES.md）
+## 5 个 bug 速查（详见 docs/handoff/cutover.md）
 
 [列表]
 
@@ -344,7 +344,7 @@ V5.7 cutover 期间发现 5 个代码 bug 阻塞 schema migrate / daily ETL。Cu
 - corporate_actions / fundamentals 切 provider（FMP → Polygon/Massive）等 a 池上线
 - 6 secrets 轮换
 - master → main 改名
-- 其他见 docs/handoff/03_KNOWN_ISSUES.md 旧坑列表
+- 其他见 docs/handoff/cutover.md 旧坑列表
 ```
 
 **Commit**：`docs: V5+1 修补包 CHANGELOG + 复盘文档`
@@ -380,4 +380,4 @@ git push origin master
 
 ## 起步
 
-读完这个文件 · 继续读 `05_CUTOVER_REMAINING.md`（V5+1 push 后用户怎么收尾）。
+读完这个文件 · 继续读 `cutover.md`（V5+1 push 后用户怎么收尾）。

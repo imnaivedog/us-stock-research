@@ -1,145 +1,166 @@
-# runbook
+# Runbook
 
-# Runbook · daily/cron 操作 + 回滚预案
+LightOS operations reference. User runs these commands; Codex does not SSH.
 
-> 用户在 LightOS terminal 跑这些 · codex 不直接 ssh
-> 
+## Runtime
 
-## 1. 手动跑 daily ETL
+- OS: LightOS.
+- User: `naivedog`.
+- Repo: `~/us-stock-research/`.
+- Python/venv: uv-managed `.venv/`.
+- Postgres: 17 on `localhost:5432`, database `usstock`.
+- Logs: `~/logs/`.
+- Backups: `/lzcapp/document/usstock-backups/`.
+- System timezone: UTC. User-facing time usually Asia/Shanghai.
+- `.env`: repo root, permission 600, user-owned.
+
+Environment keys Codex may reference by name only: `DATABASE_URL`, `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `FMP_API_KEY`, `FRED_API_KEY`, `POLYGON_API_KEY`, `NOTION_TOKEN`, `NOTION_DAILY_DB_ID`, `DISCORD_WEBHOOK_URL`, `LOG_LEVEL`, `PYTHONUNBUFFERED`.
+
+## Manual Daily
 
 ```bash
 cd ~/us-stock-research
-set -a && source .env && set +a   # V5+1 P1 后理论不需要
 
-# 正常入口
+# normal
 uv run --package usstock-data usstock-data daily
 
-# 指定日期重跑（幂等 UPSERT）
+# idempotent rerun for a date
 uv run --package usstock-data usstock-data daily --as-of 2026-04-29
+uv run --package usstock-analytics usstock-analytics themes-score --date 2026-04-29
+uv run --package usstock-analytics usstock-analytics signals --date 2026-04-29 --pool m
+uv run --package usstock-reports usstock-reports daily --date 2026-04-29 --no-discord
 ```
 
-## 2. universe sync
+## Universe Sync
 
 ```bash
 uv run --package usstock-data usstock-data universe sync
-# 期望输出（cutover 当前）：
-# {"m": {"candidates": 1784, "upserted": 1784, "removed": 375}, "a": {"synced": 0}}
 ```
 
-用户填 a_pool.yaml 5 thesis 后 · 期望 `a.synced ≥ 5`。
+Expected at cutover: M pool around 1784 active, A pool 0 until user fills `config/a_pool.yaml`.
 
-## 3. 看日志
+## Logs
 
 ```bash
-# 今日 daily
 tail -f ~/logs/daily-$(date +%F).log
-
-# 找 ERROR
 grep ERROR ~/logs/daily-$(date +%F).log
-
-# 全周
 ls -lt ~/logs/ | head
 ```
 
-## 4. alert_log 诊断
+## Alert Triage
 
 ```sql
--- 最近 2 小时所有 alert
-SELECT created_at, severity, job_name, symbol, message
+SELECT created_at, severity, job_name, category, symbol, LEFT(message, 120) AS msg
 FROM alert_log
 WHERE created_at > now() - interval '2 hours'
-ORDER BY created_at DESC LIMIT 100;
+ORDER BY created_at DESC
+LIMIT 100;
 
--- ERROR 最多的 job
-SELECT job_name, COUNT(*) AS n
+SELECT job_name, severity, COUNT(*) AS n
 FROM alert_log
-WHERE severity='ERROR' AND created_at::date = current_date
-GROUP BY job_name ORDER BY n DESC;
+WHERE created_at::date = current_date
+GROUP BY job_name, severity
+ORDER BY n DESC;
 ```
 
-## 5. 4 表行数诊断（cutover 验证用）
+## Row Count Triage
 
 ```sql
 SELECT 'quotes_daily' AS t, COUNT(*) AS n FROM quotes_daily WHERE trade_date = '2026-04-29'
-UNION ALL SELECT 'macro_daily',          COUNT(*) FROM macro_daily          WHERE trade_date = '2026-04-29'
-UNION ALL SELECT 'daily_indicators',     COUNT(*) FROM daily_indicators     WHERE trade_date = '2026-04-29'
-UNION ALL SELECT 'symbol_universe(active)', COUNT(*) FROM symbol_universe   WHERE is_active = true;
+UNION ALL SELECT 'macro_daily', COUNT(*) FROM macro_daily WHERE trade_date = '2026-04-29'
+UNION ALL SELECT 'daily_indicators', COUNT(*) FROM daily_indicators WHERE trade_date = '2026-04-29'
+UNION ALL SELECT 'symbol_universe(active)', COUNT(*) FROM symbol_universe WHERE is_active = true
+UNION ALL SELECT 'themes_score_daily', COUNT(*) FROM themes_score_daily WHERE trade_date = '2026-04-29';
 ```
 
-## 6. 手动 backup
+## Cron
 
-```bash
-bash ~/scripts/weekly_backup.sh
-# 产出: /lzcapp/document/usstock-backups/usstock-YYYY-MM-DD.sql.gz
-ls -lh /lzcapp/document/usstock-backups/ | tail
+UTC:
+
+```cron
+30 22 * * 1-5 /home/naivedog/scripts/daily.sh >> /home/naivedog/logs/daily-$(date +\%F).log 2>&1
+0 20 * * 6 /home/naivedog/scripts/weekly_backup.sh >> /home/naivedog/logs/backup-$(date +\%F).log 2>&1
 ```
 
-## 7. 安装 / 更新 cron
+Asia/Shanghai equivalent:
+
+```text
+daily: 06:30 Tue-Sat
+backup: 04:00 Sun
+```
+
+Install/update scripts:
 
 ```bash
-# 拷贝最新 deploy/*.sh 到 ~/scripts/
 cp ~/us-stock-research/deploy/daily.sh ~/scripts/
 cp ~/us-stock-research/deploy/weekly_backup.sh ~/scripts/
 chmod +x ~/scripts/*.sh
-
-# 检查 / 编辑 cron
 crontab -l
 crontab -e
-
-# 重启 cron service（如需）
-sudo systemctl restart cron 2>/dev/null || sudo service cron restart
 ```
 
-## 8. 回滚预案
-
-### 8.1 数据回滚（最严重）
+## Backup
 
 ```bash
-# 1. 找最近 backup
-ls -lh /lzcapp/document/usstock-backups/
+bash ~/scripts/weekly_backup.sh
+ls -lh /lzcapp/document/usstock-backups/ | tail
+```
 
-# 2. 解压 + restore
+## Rollback
+
+Prefer code revert over history rewriting:
+
+```bash
+cd ~/us-stock-research
+git log --oneline -10
+git revert <bad-commit>
+uv sync
+```
+
+Database restore is severe and user-owned:
+
+```bash
 cd /tmp
 gunzip -k /lzcapp/document/usstock-backups/usstock-YYYY-MM-DD.sql.gz
 PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -d "$POSTGRES_DB" < /tmp/usstock-YYYY-MM-DD.sql
 ```
 
-### 8.2 代码回滚
+Never ask Codex to reset secrets. `.env` restore is user-owned.
 
-```bash
-cd ~/us-stock-research
-git log --oneline -10
-git revert <bad-commit>           # 优先 revert · 保历史
-# 或 git reset --hard <safe-commit> · 仅本地 · 不要 push --force
-uv sync
-```
-
-### 8.3 .env 还原
-
-用户保管 .env 备份（USER_OWNED §1）· 直接覆盖 `~/us-stock-research/.env` + `chmod 600`
-
-## 9. 常用 SQL 速查
+## Useful SQL
 
 ```sql
--- 最新交易日
 SELECT MAX(trade_date) FROM quotes_daily;
 
--- 单股最近 20 日行情
-SELECT trade_date, close, volume FROM quotes_daily WHERE symbol='NVDA' ORDER BY trade_date DESC LIMIT 20;
+SELECT trade_date, close, volume
+FROM quotes_daily
+WHERE symbol='NVDA'
+ORDER BY trade_date DESC
+LIMIT 20;
 
--- a 池当前清单
-SELECT symbol, is_active, thesis_added_at FROM symbol_universe WHERE pool='a' ORDER BY thesis_added_at;
+SELECT symbol, is_active, thesis_added_at
+FROM symbol_universe
+WHERE pool='a'
+ORDER BY thesis_added_at;
 
--- m 池规模
-SELECT COUNT(*) FROM symbol_universe WHERE pool='m' AND is_active=true;
+SELECT COUNT(*)
+FROM symbol_universe
+WHERE pool='m' AND is_active=true;
 
--- 主题动量榜（当日）
-SELECT theme_id, momentum_score, quintile, rank FROM themes_score_daily
+SELECT theme_id, momentum_score, quintile, rank
+FROM themes_score_daily
 WHERE trade_date = (SELECT MAX(trade_date) FROM themes_score_daily)
-ORDER BY rank LIMIT 10;
+ORDER BY rank
+LIMIT 10;
 ```
 
-## 10. 紧急联络
+## When Reporting An Incident To Codex
 
-- 用户在 chat 报错给 codex · 贴：日志 tail / alert_log 2h / 4 表行数三连结果
-- 凭据问题用户自己处理（USER_OWNED §1）· codex 不要试图获取/重置
+Paste:
+
+- Command run and exit code.
+- Last 50 log lines.
+- Alert triage query.
+- Row count triage query.
+
+Do not paste secrets.

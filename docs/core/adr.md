@@ -1,120 +1,81 @@
-# adr
+# ADR Index
 
-# ADR · 架构决策记录集
+Canonical numbering follows `docs/_raw/adr-source.md`. Do not reuse ADR IDs for implementation notes. If code introduces a new architectural decision, append a new ADR ID after ADR-033 or mark an older ADR as superseded.
 
-> 本页为 ADR 索引·各条主题与状态。原始完整决议文（背景 / 选项对比 / 代价）请从 Notion ADR 页 export（本仓留主题 + 关键决策）。
-> 
+## Status Vocabulary
 
-> 
-> 
+- **Accepted**: current design constraint.
+- **Superseded**: replaced or materially narrowed by a later ADR or V5.7 implementation delta.
+- **Implementation Delta**: `_raw/v5.7-taskbook-source.md` changed implementation shape without creating a new canonical ADR.
+- **Deprecated**: explicitly abandoned.
+- **Open**: reserved/future question.
 
-> codex 需在代码中恢复某条 ADR 上下文时·在 PR description 里引用该 ADR ID + 关键决策。
-> 
+## Canonical ADRs
 
-## ADR 状态定义
+| ADR | Decision | Current status |
+| --- | --- | --- |
+| ADR-001 | Four-layer L1-L4 system and layer semantics. L3 is observation only; L4 is execution. | Accepted |
+| ADR-002 | Stock universe = SP Composite 1500 + QQQ foreign/ADR additions + IPO/Hermes/manual supplements. | Superseded in implementation by ADR-022/023/025 and V5.7 m_pool curation details |
+| ADR-003 | Macro section renamed to macro regime; 8 macro scenarios. | Accepted |
+| ADR-004 | Dial S/A/B/C/D with positions 120/100/80/60/20. | Accepted |
+| ADR-005 | 50/30/20 staged entry. | Accepted for backtest/local simulator |
+| ADR-006 | R-multiple staged take profit. | Accepted for backtest/local simulator |
+| ADR-007 | Two simulated pools, ETF and stock. | Superseded by ADR-033 for cloud daily output; retained for local backtest |
+| ADR-008 | Differentiated percentile windows instead of all-5Y. | Accepted |
+| ADR-009 | Theme volume uses 1Y percentile plus absolute volume control. | Accepted |
+| ADR-010 | BTC joins macro confirmation as risk-on/off input, not a standalone scenario. | Accepted |
+| ADR-011 | Simulated-trading daily section simplified. | Superseded by ADR-033; daily now excludes simulated trading |
+| ADR-012 | Notion full report and Discord brief split. | Accepted, with ADR-033 removing NAV/report tracking pieces |
+| ADR-013 | Split bloated Notion page into focused pages. | Superseded by repo docs structure; source remains historical context |
+| ADR-014 | Simulation start moved to 2025-01-01 due to FMP Starter 5Y window. | Accepted for backtest |
+| ADR-015 | S dial quantitative trigger: 4 hard gates + 1 momentum + 3 days. | Accepted |
+| ADR-016 | L3 sector quadrant mapping by relative rank plus absolute percentile floor. | Accepted |
+| ADR-017 | Simulator single-direction flow and live/backtest isolation; algorithm must not read simulator state. | Accepted; Cloud SQL/live parts adapted by V5.7 deployment |
+| ADR-018 | Daily idempotency and `trade_id` uniqueness. | Superseded by ADR-033 for cloud daily trade tracking; retained for local backtest/report idempotency |
+| ADR-019 | Seven-exit trigger priority; 5D minimum hold constrains only active rotation. | Retained for local backtest |
+| ADR-020 | Asymmetric dial cooldown. | Accepted |
+| ADR-021 | Notion row properties + page body persistence. | Accepted but simplified by ADR-033: no NAV fields/section |
+| ADR-022 | M pool source via FMP ETF holdings. | Accepted as source principle; V5.7 curation implements via repo package |
+| ADR-023 | M pool quality hard filters. | Accepted: market cap >= $1B, 20D dollar volume >= $10M, ipoDate >= 90d, actively trading |
+| ADR-024 | Notion output-only and one-way data flow. | Accepted |
+| ADR-025 | Dynamic member management: monthly local diff, soft retirement, dedupe priority. | Accepted |
+| ADR-026 | Bootstrap / Curation / Operate deployment split. | Accepted; V5.7 runs current production on LightOS instead of the older Cloud Run-only shape |
+| ADR-027 | Cloud SQL Postgres + GCS/bootstrap + local backtest SQLite. | Implementation Delta: V5.7 production runtime is LightOS Postgres 17; Postgres remains accepted data-store choice |
+| ADR-028 | `themes.yaml` seed strategy: ETF reverse inference plus user review. | Accepted |
+| ADR-029 | Watchlist side table for social/thesis collaboration. | Implementation Delta: current A pool thesis SoT is `config/a_pool.yaml`; watchlist remains conceptually separate, not a trading position |
+| ADR-030 | A pool long-thesis timing as parallel sidecar. | Accepted; V5.7 extends original 11 signals to 12 with `theme_oversold_entry` |
+| ADR-031 | `daily_indicators` table and compute job. | Accepted |
+| ADR-032 | M pool L1-L4 + macro signal engine in 5 modules. | Accepted |
+| ADR-033 | Cloud ETL/local BI split; simulated trading removed from daily report and moved to local CLI. | Accepted and currently decisive for reports/backtest boundary |
 
-- **Accepted**：已落地·代码应符合
-- **Superseded**：被后者取代·表明取代的 ADR ID
-- **Proposed**：在审
-- **Deprecated**：不再适用·但代码可能还有残留
+## Rejected Or Deprecated Proposals
 
-## V5 前 ADR-001 ~ ADR-017
+From `_raw/adr-source.md`:
 
-这些是 V4 / V5 前期决议。现阶段大多已 Accepted 或 Superseded。如 codex 需某条详情·请让用户从 Notion ADR 页提供。
+| ID | Proposal | Status |
+| --- | --- | --- |
+| X-01 | Real-position breakdown warning section in this system. | Deprecated |
+| X-02 | No explicit take-profit, only exit on breakdown. | Deprecated by ADR-006 |
+| X-03 | Future Phase 5 position-monitoring system inside this repo. | Deprecated |
+| X-04 | Macro indicators directly enter algorithm. | Deprecated; macro is context/reference |
+| X-05 | 20MA breadth direction arrow in main judgment. | Deprecated |
+| X-06 | L3 sector directly creates stock operations. | Deprecated by ADR-001 |
 
-关键几条列举（记住主题即可）：
+## V5.7 Implementation Notes
 
-- **ADR-013**：三层架构 reports/analytics/data
-- **ADR-014**：依赖单向·不跨层反向依赖
-- **ADR-015**：双池雏形·本阶段实现后 V5.7 调整 (superseded by ADR-022)
-- **ADR-016**：Postgres 为唯一 prod 仓·本地 dev 可 SQLite
-- **ADR-017**：analytics experiment CSV 输出·不污染 prod 表
+These are implementation deltas from `_raw/v5.7-taskbook-source.md`, not canonical ADR IDs:
 
-## V5.7 新增 ADR-018 ~ ADR-033
+- Monorepo is three main packages plus MCP: data, analytics, reports, MCP.
+- `config/a_pool.yaml` is A pool SoT; core thesis fields are not mirrored into DB.
+- A pool mcap anchors are `thesis_stop_mcap_b` and `target_mcap_b`; prices are derived from `shares_outstanding`.
+- A pool signal set is 12 classes: B1-B5, S1/S2a/S2b/S3, W1/W2, `theme_oversold_entry`.
+- A pool scoring uses 35/30/35 elasticity/value/R:R with explicit subweights in `system.md`.
+- MCP tools are capped at 4 read-only tools: `get_dial`, `get_top_themes`, `get_top_stocks`, `query_signals`.
+- `verdict_text` must have a deterministic fallback so LLM failure never breaks daily.
 
-### ADR-018 · schema/ddl.sql 集中·[migrate.py](http://migrate.py) 幂等
+## Codex Rules
 
-- **决策**：所有表结构变更走 schema/ddl.sql + scripts/[migrate.py](http://migrate.py)·业务代码不 CREATE·跑两遍不出错
-- **状态**：Accepted
-
-### ADR-019 · corporate_actions 表·拆股增发复权
-
-- **决策**：新增 corporate_actions 表·记 stock_split / stock_dividend / cash_dividend · 回测复权依赖
-- **状态**：Accepted·codex V5+1 需修 FMP free tier fallback
-
-### ADR-020 · fundamentals 表·季度财务
-
-- **决策**：fundamentals 表记季度 income/balance/cashflow·供财务画像与拐点信号使用
-- **状态**：Accepted·codex V5+1 需修 FMP free tier fallback
-
-### ADR-021 · events_calendar 表·catalyst 临近信号
-
-- **决策**：events_calendar 表记财报/分拆/FOMC/产品发布·驱动 B2 / S2a 信号
-- **状态**：Accepted
-
-### ADR-022 · 双池 SoT 走 yaml
-
-- **决策**：a 池 SoT = config/a_pool.yaml·m 池 override = config/m_pool_overrides.yaml·DB 仅镜像 3 字段·仅 yaml 为人/Codex/Hermes 共同入口
-- **状态**：Accepted·取代 ADR-015 实现细节
-
-### ADR-023 · 价格锁 → 市值锁
-
-- **决策**：a_pool.yaml 用 thesis_stop_mcap_b / target_mcap_b·价格运行时反推 mcap*1e9/shares_outstanding·拆股增发免疫
-- **状态**：Accepted
-
-### ADR-024 · shares_outstanding NULL 走 hold + alert
-
-- **决策**：ETL 拉取失败不静默·该标的今日信号走 hold + alert_log WARN
-- **状态**：Accepted
-
-### ADR-025 · alert_log · 告警不重复推送
-
-- **决策**：alert_log 表记已推送告警·category 区分·daily report 取未推送的·避免骚扰
-- **状态**：Accepted
-
-### ADR-026 · watchlist 表·独立概念
-
-- **决策**：watchlist 表同 watchlist·跨双池·记 target_market_cap / thesis_url / updated_at·不作为交易头寸
-- **状态**：Accepted
-
-### ADR-027 · themes_score_daily · 现产现耗
-
-- **决策**：主题评分仅走今日·不向后填·某日某主题缺→该主题代表股一律 hold
-- **状态**：Accepted
-
-### ADR-028 · themes SoT = themes.yaml
-
-- **决策**：config/themes.yaml 为主题词典唯一源·codex 从 etf_holdings 反推草案·用户 review PR merge·a_pool.yaml.themes 必 ∈ themes.yaml.keys()·universe sync fail-fast
-- **状态**：Accepted·V5.7 新增
-
-### ADR-029 · 三维评分
-
-- **决策**：弹性 35% / 性价比 30% / R:R 35% → A_Score ∈ [0,100]·主题加成走 §A.5·不走连乘
-- **状态**：Accepted·codex V5+1 需实现
-
-### ADR-030 · 12 类 A 池信号
-
-- **决策**：B1-B5 买 · S1/S2a/S2b/S3 卖 · W1/W2 警告 hold · theme_oversold_entry 主题超卖入场·不加 13 类·克制
-- **状态**：Accepted·codex V5+1 需实现
-
-### ADR-031 · MCP 工具 8 → 4
-
-- **决策**：get_dial / get_top_themes / get_top_stocks(pool=m|a) / query_signals·Hermes 95% 用例够了·余走 SQL·返 raw structured·不 narrative 包装
-- **状态**：Accepted
-
-### ADR-032 · verdict_text 骨架兑底
-
-- **决策**：[verdict.py](http://verdict.py) LLM 全路径 fallback·LLM 失败/GCP 超限/key 过期 任一·verdict_text 走骨架 【代码】A_Score=X · top_signal · 入场 Y / 止损 Z · daily 不崩
-- **状态**：Accepted·codex V5+1 需实现
-
-### ADR-033 · trunk 直推 · 不分支
-
-- **决策**：个人项目不开 PR 分支·codex 本地跑通测试后直推 origin master·push 频率 = 1 commit / package·master→main 重命名留给用户决定时机
-- **状态**：Accepted
-
-## codex 使用须知
-
-1. 动代码前·查是否有相关 ADR·遵其决策·不走偏
-2. PR description 里引用 ADR ID·例：`per ADR-022, a-pool reads from a_pool.yaml not DB`
-3. 不同意某 ADR · 不要静默走偏 · 提出辩论·让用户决是否补一条 superseded ADR
-4. ADR 本页唯读·codex 不修·只加·加走 PR 同 commit
+1. Before code changes, check this index and `system.md`.
+2. If a code change relies on an ADR, mention the ADR number in the commit or final note.
+3. If a decision conflicts with an ADR, ask the user before implementing and add/supersede an ADR in the same commit.
+4. Do not silently create "new ADR-018"-style local numbering again. That caused drift.
