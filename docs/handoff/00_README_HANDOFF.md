@@ -5,6 +5,38 @@
 > Codex 先读这页。读完你能拿到 us-stock-research 项目的全貌 · 该做什么 · 去哪看。
 > 
 
+## ⚠️ 阶段 0：读 _raw/ → 自主重构 docs/
+
+**你接手的第一件事不是写代码·是把文档结构定型。**
+
+`docs/_raw/` 三个 source 文件是 Notion 原始页 export·**设计权威 + 完整性基准**。其它所有 docs/ 内容（除 `_raw/` 与 `USER_OWNED.md`）都是 cutover 期间快速整理稿·**结构 / 措辞 / 详略都可调**·你有完全自主权。
+
+**阶段 0 任务**：
+
+1. 读 `docs/_raw/` 三个 source（设计权威）
+2. 读 `docs/handoff/00-05` 与 `USER_OWNED.md`（接手上下文 + 用户保留区）
+3. 读现有 `docs/core/` `docs/ops/` `docs/changes/` `docs/reference/` 全部内容
+4. **基于 _raw/ 检查完整性**：信号阈值 / 评分公式 / 字段语义 / ADR 状态 是否齐全且准确·哪些设计点 _raw/ 有但当前 docs/ 没有
+5. **自主决定 docs/ 结构**：
+    - 当前 5 子目录（core/ ops/ changes/ reference/ handoff/）只是建议·可重排可合并
+    - 简化 · 删冗余 · 合并相近文件 · 标题精简
+    - 该删的删 · 该重写的重写 · 优先 codex 视角而非用户视角
+6. 一次 commit · message: `docs: restructure based on _raw/ source · simplify · drop redundant`
+7. push origin master · 通知用户 · **等用户审完才进 P1**
+
+**不动**：
+
+- `docs/_raw/`（设计快照 · 只读）
+- `docs/handoff/USER_OWNED.md`（用户保留区）
+- `docs/handoff/04_V5_PLUS_1_TASKBOOK.md`（V5+1 patch 清单 · 阶段 1 用 · 内容保留 · 结构可调）
+- 业务代码 / `schema/` / 配置 yaml
+
+**冲突原则**：以 `_raw/` 为完整性基准 · 其它可全删重写。
+
+**简化原则**：能合并不分文件 · 能删不留 · 标题精简 · 优先 codex 视角。
+
+阶段 0 完成后 · 进阶段 1（详见末尾“提示词·阶段 1”）。
+
 ## TL;DR
 
 - **项目** = 个人美股波段 + 长线辅助决策系统 · 1 人维护
@@ -129,12 +161,45 @@ docs/
 | changes/*.md | 必 | 每次发版加一个 |
 | reference/thesis-*.md | 可 | thesis 变动同 commit |
 
-## 提示词（用户贴给 codex）
+## 提示词·阶段 0（用户第一次贴给 codex）
 
 ```
-读 docs/handoff/00_README_HANDOFF.md 与 docs/core/principles.md 与 docs/core/adr.md ·
-然后读 docs/handoff/04_V5_PLUS_1_TASKBOOK.md ·
-从 P1 开始·逐个 patch 交 · 不跳顺序 · 交一个推一个 commit ·
-同 commit 更新相关文档 · commit message 含 patch ID + ADR ID ·
-不 ssh LightOS · 部署由用户跳。
+任务：自主重构 docs/ · 暂不动业务代码。
+
+步骤：
+1. 读 docs/_raw/ 三个 source（设计权威 · 完整性基准）
+2. 读 docs/handoff/00_README_HANDOFF.md 与 USER_OWNED.md
+3. 读 docs/handoff/01-05 与 docs/core/ docs/ops/ docs/changes/ docs/reference/ 全部内容
+4. 基于 _raw/ 检查完整性：信号阈值 / 评分公式 / 字段语义 / ADR 状态 是否齐全准确 · 哪些 _raw/ 有但 docs/ 没有
+5. 自主决定 docs/ 结构：
+   - 可重排子目录 · 合并相近文件 · 删冗余 · 简化标题
+   - 该删的删 · 该重写的重写 · 优先 codex 视角
+6. 一次 commit · message: "docs: restructure based on _raw/ source · simplify · drop redundant"
+7. push origin master · 通知我 · 等我审完才进 P1
+
+不动：
+- docs/_raw/（设计快照 · 只读）
+- docs/handoff/USER_OWNED.md（用户保留区）
+- docs/handoff/04_V5_PLUS_1_TASKBOOK.md（V5+1 patch 清单 · 内容保留 · 结构可调）
+- 业务代码 / schema/ / 配置 yaml
+
+冲突原则：以 _raw/ 为完整性基准 · 其它可全删重写。
+简化原则：能合并不分 · 能删不留 · 优先 codex 视角。
+不 ssh LightOS。
+```
+
+## 提示词·阶段 1（用户审完阶段 0 后贴）
+
+```
+任务：进 P1·开始 V5+1 patch 交付。
+
+步骤：
+1. 复读 docs/handoff/04_V5_PLUS_1_TASKBOOK.md
+2. 从 P1 开始·逐个 patch 交·不跳顺序·一个 patch 一个 commit
+3. 同 commit 更新相关文档（详见 00 README “文档维护责任表”）
+4. commit message 含 patch ID + ADR ID
+5. 每个 patch 完成后通知我·我去 LightOS 跳 git pull + 部署 + 验收
+6. 我验收 OK 再进下一个 patch
+
+不 ssh LightOS·部署由我跳。
 ```
