@@ -9,6 +9,7 @@ dependencies = [
   "notion-client==2.2.1",
   "pandas==2.3.3",
   "psycopg[binary]==3.2.3",
+  "python-dotenv==1.2.2",
   "PyYAML==6.0.2",
   "requests==2.33.1",
   "SQLAlchemy==2.0.36",

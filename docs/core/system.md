@@ -30,9 +30,9 @@ reports -> analytics -> data
 - `ddl.sql` 顺序固定为 CREATE TABLE -> ALTER TABLE ADD/DROP COLUMN -> CREATE INDEX，保证旧表先补列再建索引。
 - 生产历史数据受保护；destructive migration 必须先得到用户明确批准并备份。
 - MCP 返回 raw structured data，不做 narrative 包装。
-- CLI 入口经 `usstock_data.db` 自动读取 repo root `.env`；显式 shell env 优先，不被覆盖。
-- `DATABASE_URL` 可写 `postgres://` / `postgresql://`；运行时统一 normalize 为 `postgresql+psycopg://`。
-- 如果 `DATABASE_URL` 只有 username 但缺 password，且 `POSTGRES_PASSWORD` 存在，运行时会补 password 后再建 engine。
+- data / analytics / reports 三层 CLI 都会通过各自 DB helper 自动读取 repo root `.env`；显式 shell env 优先，不被覆盖。
+- data / analytics / reports 的 `DATABASE_URL` 可写 `postgres://` / `postgresql://`；运行时统一 normalize 为 `postgresql+psycopg://`。
+- 如果 `DATABASE_URL` 只有 username 但缺 password，且 `POSTGRES_PASSWORD` 存在，三层 DB helper 会补 password 后再建 engine。
 - `corporate_actions` / `fundamentals` 是 best-effort ETL；provider tier 类 per-symbol skip 走 DEBUG + INFO 汇总，transient/provider outage 仍保留 ERROR。
 
 ## 数据流

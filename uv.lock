@@ -931,6 +931,7 @@ dependencies = [
     { name = "numpy" },
     { name = "pandas" },
     { name = "psycopg", extra = ["binary"] },
+    { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "sqlalchemy" },
 ]
@@ -942,6 +943,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.0.0" },
     { name = "pandas", specifier = "==2.3.3" },
     { name = "psycopg", extras = ["binary"], specifier = "==3.2.3" },
+    { name = "python-dotenv", specifier = "==1.2.2" },
     { name = "pyyaml", specifier = "==6.0.2" },
     { name = "sqlalchemy", specifier = "==2.0.36" },
 ]
@@ -991,6 +993,7 @@ dependencies = [
     { name = "notion-client" },
     { name = "pandas" },
     { name = "psycopg", extra = ["binary"] },
+    { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "requests" },
     { name = "sqlalchemy" },
@@ -1003,6 +1006,7 @@ requires-dist = [
     { name = "notion-client", specifier = "==2.2.1" },
     { name = "pandas", specifier = "==2.3.3" },
     { name = "psycopg", extras = ["binary"], specifier = "==3.2.3" },
+    { name = "python-dotenv", specifier = "==1.2.2" },
     { name = "pyyaml", specifier = "==6.0.2" },
     { name = "requests", specifier = "==2.33.1" },
     { name = "sqlalchemy", specifier = "==2.0.36" },
