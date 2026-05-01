@@ -27,7 +27,7 @@ uv run --package usstock-data usstock-data daily
 # idempotent rerun for a date
 uv run --package usstock-data usstock-data daily --as-of 2026-04-29
 uv run --package usstock-analytics usstock-analytics themes-score --date 2026-04-29
-uv run --package usstock-analytics usstock-analytics signals --date 2026-04-29 --pool m
+uv run --package usstock-analytics usstock-analytics signals --date 2026-04-29
 uv run --package usstock-reports usstock-reports daily --date 2026-04-29 --no-discord
 ```
 

@@ -3,7 +3,7 @@
 <aside>
 🛠️
 
-**这是你的主战场。**6 个 patch · 每个独立 commit · 顺序提交 · 直推 master。读完这个文件 · 再读 05 看用户怎么用 V5+1 收尾。
+**这是你的主战场。**6 个 patch · 每个独立 commit · 顺序提交 · 直推 main。读完这个文件 · 再读 cutover 看用户怎么用 V5+1 收尾。
 
 </aside>
 
@@ -343,7 +343,7 @@ V5.7 cutover 期间发现 5 个代码 bug 阻塞 schema migrate / daily ETL。Cu
 
 - corporate_actions / fundamentals 切 provider（FMP → Polygon/Massive）等 a 池上线
 - 6 secrets 轮换
-- master → main 改名
+- master → main 改名（已完成）
 - 其他见 docs/handoff/cutover.md 旧坑列表
 ```
 
@@ -356,13 +356,13 @@ V5.7 cutover 期间发现 5 个代码 bug 阻塞 schema migrate / daily ETL。Cu
 cd D:\Dev\us-stock-research
 
 # P1
-git checkout master
-git pull origin master  # 同步最新
+git checkout main
+git pull origin main  # 同步最新
 # 改 db.py + pyproject.toml
 git add packages/usstock-data/src/usstock_data/db.py
 git add packages/usstock-data/pyproject.toml
 git commit -m "fix(data): db.py 自动 load_dotenv · CLI 入口不再依赖 source .env"
-git push origin master
+git push origin main
 
 # P2 同样套路
 # P3 改 ddl.sql + 加测试 · commit · push
