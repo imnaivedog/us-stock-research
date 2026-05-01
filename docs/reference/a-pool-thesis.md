@@ -82,6 +82,19 @@ A 池 thesis 的业务判断属于用户。Codex 可以维护结构和 placehold
 
 当前系统文档允许的 status：`active`、`watching`、`removed`。只有 `active` 产生评分。
 
+## 当前 reference 文件
+
+已恢复每只股票的独立 thesis reference：
+
+- `docs/reference/thesis-LITE.md`
+- `docs/reference/thesis-COHR.md`
+- `docs/reference/thesis-MRVL.md`
+- `docs/reference/thesis-WDC.md`
+- `docs/reference/thesis-SNDK.md`
+- `docs/reference/thesis-template.md`
+
+`config/a_pool.yaml` 当前放入 5 只 `watching` skeleton；它们会进入 universe mirror，但不会参与 A 池 signals 评分。用户补齐 `thesis_stop_mcap_b` / `target_mcap_b` 并确认后，再把对应条目改为 `active`。
+
 ## 当前 placeholder
 
 这里只是骨架。用户填写最终 thesis 数字和文字。

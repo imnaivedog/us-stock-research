@@ -14,7 +14,7 @@ DIAL_LABELS = {
     "D": "D · Risk-off",
 }
 
-POSITION_MAP = {"S": 1.0, "A": 0.8, "B": 0.5, "C": 0.25, "D": 0.0}
+POSITION_MAP = {"S": 1.2, "A": 1.0, "B": 0.8, "C": 0.6, "D": 0.2}
 
 
 def decimal_to_float(value: Any) -> Any:

@@ -2,27 +2,40 @@
 
 from __future__ import annotations
 
-from usstock_analytics.a_pool.signals.models import APoolSnapshot, signal
+from usstock_analytics.a_pool.signals.models import (
+    APoolSnapshot,
+    Calibration,
+    price_from_mcap_b,
+    signal,
+)
 
-QUINTILE_ORDER = {"top": 4, "upper": 3, "mid": 2, "lower": 1, "bottom": 0}
 
-
-def w1_theme_downgrade(snapshot: APoolSnapshot) -> dict[str, object]:
-    prev = QUINTILE_ORDER.get(snapshot.theme_quintile_prev, 2)
-    current = QUINTILE_ORDER.get(snapshot.theme_quintile, 2)
-    triggered = prev - current >= 2
+def w1_rsi_overheated(snapshot: APoolSnapshot, calibration: Calibration) -> dict[str, object]:
+    threshold = calibration.rsi14_p95 or calibration.rsi14_p80
+    history = snapshot.rsi14_history or (snapshot.rsi14,)
+    last_three = history[-3:]
+    triggered = len(last_three) == 3 and all(value > threshold for value in last_three)
     return signal(
         triggered,
         1.0 if triggered else 0.0,
-        previous=snapshot.theme_quintile_prev,
-        current=snapshot.theme_quintile,
+        rsi14=snapshot.rsi14,
+        threshold=threshold,
+        rsi14_history=last_three,
     )
 
 
-def w2_corporate_action_abnormal(snapshot: APoolSnapshot) -> dict[str, object]:
-    triggered = bool(snapshot.corporate_action_flags)
+def w2_thesis_aging(snapshot: APoolSnapshot) -> dict[str, object]:
+    target_price = price_from_mcap_b(snapshot.target_mcap_b, snapshot.shares_outstanding)
+    triggered = (
+        snapshot.thesis_age_days is not None
+        and snapshot.thesis_age_days > 365 * 3
+        and target_price is not None
+        and snapshot.close < target_price * 0.5
+    )
     return signal(
         triggered,
         1.0 if triggered else 0.0,
-        flags=snapshot.corporate_action_flags,
+        thesis_age_days=snapshot.thesis_age_days,
+        close=snapshot.close,
+        target_price=target_price,
     )

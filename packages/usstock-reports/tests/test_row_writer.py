@@ -10,7 +10,7 @@ def test_row_writer_builds_complete_typed_properties(sample_report) -> None:
     assert properties["Date"] == {"date": {"start": "2026-04-30"}}
     assert properties["Dial"] == {"select": {"name": "A · Risk-on"}}
     assert properties["Regime"] == {"select": {"name": "A"}}
-    assert properties["Position"] == {"number": 0.8}
+    assert properties["Position"] == {"number": 1.0}
     assert properties["Breadth Score"] == {"number": 76.0}
     assert properties["Macro State"] == {"select": {"name": "risk_on"}}
     assert properties["Alerts"] == {"number": 1.0}

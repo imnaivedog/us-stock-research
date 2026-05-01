@@ -316,8 +316,10 @@ CREATE TABLE IF NOT EXISTS themes_score_daily (
 
 CREATE TABLE IF NOT EXISTS a_pool_calibration (
     symbol TEXT PRIMARY KEY,
+    rsi14_p5 NUMERIC,
     rsi14_p20 NUMERIC,
     rsi14_p80 NUMERIC,
+    rsi14_p95 NUMERIC,
     drawdown_p10 NUMERIC,
     vol_avg_60d NUMERIC,
     beta_120d NUMERIC,
@@ -359,6 +361,8 @@ ALTER TABLE symbol_universe ADD COLUMN IF NOT EXISTS thesis_url TEXT;
 ALTER TABLE symbol_universe ADD COLUMN IF NOT EXISTS shares_outstanding NUMERIC;
 ALTER TABLE symbol_universe ADD COLUMN IF NOT EXISTS shares_outstanding_updated_at TIMESTAMPTZ;
 ALTER TABLE symbol_universe ADD COLUMN IF NOT EXISTS thesis_added_at TIMESTAMPTZ;
+ALTER TABLE a_pool_calibration ADD COLUMN IF NOT EXISTS rsi14_p5 NUMERIC;
+ALTER TABLE a_pool_calibration ADD COLUMN IF NOT EXISTS rsi14_p95 NUMERIC;
 ALTER TABLE symbol_universe DROP COLUMN IF EXISTS target_cap;
 ALTER TABLE symbol_universe DROP COLUMN IF EXISTS target_market_cap;
 ALTER TABLE symbol_universe_changes ADD COLUMN IF NOT EXISTS pool TEXT;

@@ -10,6 +10,39 @@ themes:
       - {symbol: AVGO, weight: 0.05}
       - {symbol: MRVL, weight: 0.03}
       - {symbol: VRT, weight: 0.03}
+  - theme_id: theme_optical_module
+    name_cn: 光模块
+    name_en: Optical Modules
+    description: AI data-center optical transceivers and photonics supply chain
+    source_etfs: [AIQ, SOXX]
+    members:
+      - {symbol: LITE, weight: 0.08}
+      - {symbol: COHR, weight: 0.08}
+      - {symbol: MRVL, weight: 0.05}
+      - {symbol: AVGO, weight: 0.04}
+      - {symbol: CIEN, weight: 0.03}
+  - theme_id: theme_custom_silicon
+    name_cn: 定制芯片
+    name_en: Custom Silicon
+    description: Custom ASIC, DSP, and data-center silicon supply chain
+    source_etfs: [SMH, SOXX]
+    members:
+      - {symbol: AVGO, weight: 0.08}
+      - {symbol: MRVL, weight: 0.06}
+      - {symbol: NVDA, weight: 0.05}
+      - {symbol: AMD, weight: 0.04}
+      - {symbol: TSM, weight: 0.04}
+  - theme_id: theme_storage
+    name_cn: 存储
+    name_en: Storage
+    description: HDD, NAND, and data-center storage hardware cycle
+    source_etfs: [SMH, SOXX]
+    members:
+      - {symbol: WDC, weight: 0.07}
+      - {symbol: SNDK, weight: 0.06}
+      - {symbol: STX, weight: 0.05}
+      - {symbol: MU, weight: 0.05}
+      - {symbol: NTAP, weight: 0.03}
   - theme_id: theme_semiconductor
     name_cn: 半导体
     name_en: Semiconductors

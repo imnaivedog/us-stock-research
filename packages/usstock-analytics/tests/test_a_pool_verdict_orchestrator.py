@@ -50,6 +50,28 @@ def snap(**kwargs) -> APoolSnapshot:
         "thesis_stop_mcap_b": 800,
         "target_mcap_b": 1400,
         "theme_quintile": "top",
+        "open": 98,
+        "prev_close": 99,
+        "volume": 2_000_000,
+        "avg_volume_20d": 1_000_000,
+        "sma_20": 100,
+        "sma_50": 105,
+        "sma_200": 90,
+        "prev_sma_20": 106,
+        "prev_sma_50": 105,
+        "prev_sma_200": 110,
+        "macd_line": 1.1,
+        "macd_signal": 1.0,
+        "prev_macd_line": 0.9,
+        "prev_macd_signal": 1.0,
+        "days_since_previous_macd_cross": 70,
+        "rolling_high_60": 100,
+        "rolling_low_20": 98,
+        "rolling_low_60": 95,
+        "max_rsi_60": 80,
+        "rsi14_history": (81, 82, 83),
+        "thesis_age_days": 365 * 4,
+        "recent_b5_support": True,
     }
     base.update(kwargs)
     return APoolSnapshot(**base)
@@ -134,9 +156,17 @@ def history_frame(days: int = 61) -> pd.DataFrame:
         {
             "symbol": ["NVDA"] * days,
             "trade_date": [start + timedelta(days=idx) for idx in range(days)],
+            "open": [121.0] * (days - 1) + [98.0],
+            "high": [122.0] * (days - 1) + [101.0],
+            "low": [119.0] * (days - 1) + [98.0],
             "close": [120.0] * (days - 1) + [100.0],
+            "volume": [1_000_000] * (days - 1) + [2_000_000],
             "rsi_14": [29.0] * days,
+            "sma_20": [120.0] * days,
+            "sma_50": [120.0] * days,
             "sma_200": [120.0] * days,
+            "macd_line": [0.8] * (days - 1) + [1.1],
+            "macd_signal": [1.0] * days,
         }
     )
 
@@ -170,30 +200,27 @@ def test_snapshot_computes_bottom_days_consecutive() -> None:
     assert bottom_streak(rows) == 22
 
 
-def test_b4_signal_triggered_on_recent_earnings_drop() -> None:
-    row = build_daily_row(
-        snapshot=snap(days_since_earnings=5, post_earnings_drop_pct=-7),
-        calibration=CAL,
-    )
+def test_b4_signal_triggered_on_fresh_macd_cross() -> None:
+    row = build_daily_row(snapshot=snap(), calibration=CAL)
     assert row["signals"]["b4"]["triggered"] is True
 
 
-def test_w1_triggered_on_quintile_drop_two_levels() -> None:
+def test_w1_triggered_on_three_day_rsi_overheat() -> None:
     row = build_daily_row(
-        snapshot=snap(theme_quintile="lower", theme_quintile_prev="top"),
+        snapshot=snap(rsi14_history=(81, 82, 83), rsi14=83),
         calibration=CAL,
     )
     assert row["signals"]["w1"]["triggered"] is True
 
 
-def test_w2_triggered_on_split_in_corporate_actions() -> None:
-    row = build_daily_row(snapshot=snap(corporate_action_flags=["split"]), calibration=CAL)
+def test_w2_triggered_on_thesis_aging() -> None:
+    row = build_daily_row(snapshot=snap(thesis_age_days=365 * 4, close=60), calibration=CAL)
     assert row["signals"]["w2"]["triggered"] is True
 
 
-def test_s2b_triggered_after_20_days_bottom() -> None:
+def test_s2b_triggered_on_slow_death_cross() -> None:
     row = build_daily_row(
-        snapshot=snap(theme_quintile="bottom", theme_bottom_days=21),
+        snapshot=snap(prev_sma_50=121, prev_sma_200=120, sma_50=119, sma_200=120),
         calibration=CAL,
     )
     assert row["signals"]["s2b"]["triggered"] is True
@@ -218,12 +245,14 @@ def test_orchestrator_end_to_end_4_signals_active(monkeypatch) -> None:
         orchestrator,
         "load_symbol_metadata",
         lambda engine, symbols: {
-            "NVDA": {
-                "shares_outstanding": 10_000_000_000,
-                "rsi14_p20": 30,
-                "rsi14_p80": 70,
-                "drawdown_p10": -0.2,
-            }
+                "NVDA": {
+                    "shares_outstanding": 10_000_000_000,
+                    "rsi14_p5": 30,
+                    "rsi14_p20": 30,
+                    "rsi14_p80": 70,
+                    "rsi14_p95": 80,
+                    "drawdown_p10": -0.2,
+                }
         },
     )
     monkeypatch.setattr(
@@ -257,7 +286,7 @@ def test_orchestrator_end_to_end_4_signals_active(monkeypatch) -> None:
 
     assert run(trade_date=date(2026, 4, 30), engine=object()) == 1
     signals = written_rows[0]["signals"]
-    assert signals["b4"]["triggered"] is True
-    assert signals["s2b"]["triggered"] is True
-    assert signals["w1"]["triggered"] is True
-    assert signals["w2"]["triggered"] is True
+    assert signals["b3"]["triggered"] is True
+    assert signals["b5"]["triggered"] is True
+    assert signals["w1"]["triggered"] is False
+    assert signals["theme_oversold_entry"]["triggered"] is False

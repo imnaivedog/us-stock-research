@@ -18,8 +18,10 @@ MIN_HISTORY_ROWS = 120
 @dataclass(frozen=True)
 class CalibrationRow:
     symbol: str
+    rsi14_p5: float
     rsi14_p20: float
     rsi14_p80: float
+    rsi14_p95: float
     drawdown_p10: float
     vol_avg_60d: float
     beta_120d: float
@@ -48,8 +50,10 @@ def compute_calibration(
     )
     return CalibrationRow(
         symbol=symbol,
+        rsi14_p5=float(df["rsi_14"].quantile(0.05)),
         rsi14_p20=float(df["rsi_14"].quantile(0.20)),
         rsi14_p80=float(df["rsi_14"].quantile(0.80)),
+        rsi14_p95=float(df["rsi_14"].quantile(0.95)),
         drawdown_p10=float(df["drawdown_60d"].quantile(0.10)),
         vol_avg_60d=float((df["close"] * df["volume"]).tail(60).mean()),
         beta_120d=0.0 if pd.isna(beta) else float(beta),
@@ -109,16 +113,18 @@ def upsert_calibrations(engine: Engine, rows: list[CalibrationRow]) -> int:
             text(
                 """
                 INSERT INTO a_pool_calibration (
-                    symbol, rsi14_p20, rsi14_p80, drawdown_p10,
+                    symbol, rsi14_p5, rsi14_p20, rsi14_p80, rsi14_p95, drawdown_p10,
                     vol_avg_60d, beta_120d, calibrated_at
                 )
                 VALUES (
-                    :symbol, :rsi14_p20, :rsi14_p80, :drawdown_p10,
+                    :symbol, :rsi14_p5, :rsi14_p20, :rsi14_p80, :rsi14_p95, :drawdown_p10,
                     :vol_avg_60d, :beta_120d, now()
                 )
                 ON CONFLICT (symbol) DO UPDATE SET
+                    rsi14_p5 = EXCLUDED.rsi14_p5,
                     rsi14_p20 = EXCLUDED.rsi14_p20,
                     rsi14_p80 = EXCLUDED.rsi14_p80,
+                    rsi14_p95 = EXCLUDED.rsi14_p95,
                     drawdown_p10 = EXCLUDED.drawdown_p10,
                     vol_avg_60d = EXCLUDED.vol_avg_60d,
                     beta_120d = EXCLUDED.beta_120d,

@@ -23,6 +23,31 @@ class APoolSnapshot:
     theme_quintile: str = "mid"
     theme_quintile_prev: str = "mid"
     theme_bottom_days: int = 0
+    open: float | None = None
+    high: float | None = None
+    low: float | None = None
+    prev_close: float | None = None
+    volume: float | None = None
+    avg_volume_20d: float | None = None
+    sma_20: float | None = None
+    sma_50: float | None = None
+    sma_200: float | None = None
+    prev_sma_20: float | None = None
+    prev_sma_50: float | None = None
+    prev_sma_200: float | None = None
+    macd_line: float | None = None
+    macd_signal: float | None = None
+    prev_macd_line: float | None = None
+    prev_macd_signal: float | None = None
+    days_since_previous_macd_cross: int | None = None
+    rolling_high_60: float | None = None
+    rolling_low_20: float | None = None
+    rolling_low_60: float | None = None
+    max_rsi_60: float | None = None
+    max_volume_60: float | None = None
+    rsi14_history: tuple[float, ...] = ()
+    thesis_age_days: int | None = None
+    recent_b5_support: bool = False
     days_since_earnings: int | None = None
     post_earnings_drop_pct: float = 0.0
     corporate_action_flags: list[str] = field(default_factory=list)
@@ -33,6 +58,8 @@ class Calibration:
     rsi14_p20: float
     rsi14_p80: float
     drawdown_p10: float
+    rsi14_p5: float | None = None
+    rsi14_p95: float | None = None
 
 
 def current_mcap_b(snapshot: APoolSnapshot) -> float | None:

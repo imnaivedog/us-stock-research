@@ -8,7 +8,7 @@ flowchart LR
   daily --> data["usstock-data daily"]
   daily --> theme["usstock-analytics themes-score"]
   daily --> apool["usstock-analytics a-pool signals"]
-  daily --> mpool["usstock-analytics signals --pool m"]
+  daily --> mpool["usstock-analytics signals"]
   daily --> reports["usstock-reports daily"]
 
   cron_backup["cron Sun 04:00 CST"] --> backup["weekly_backup.sh"]
@@ -46,7 +46,7 @@ uv run python -m usstock_data.universe list --pool a
 uv run python -m usstock_data daily --as-of 2026-04-29
 uv run python -m usstock_analytics themes-score --date 2026-04-29
 uv run python -m usstock_analytics a-pool signals --date 2026-04-29
-uv run python -m usstock_analytics signals --date 2026-04-29 --pool m
+uv run python -m usstock_analytics signals --date 2026-04-29
 uv run python -m usstock_reports daily --date 2026-04-29 --no-discord
 
 # 6. Replace scripts atomically enough for this personal project.
@@ -66,7 +66,7 @@ Migrations are ADD-only, so rolling back code does not drop production data.
 
 ```bash
 git revert HEAD
-git push origin master
+git push origin main
 
 ssh -p 2222 naivedog@<host>
 cd ~/us-stock-research

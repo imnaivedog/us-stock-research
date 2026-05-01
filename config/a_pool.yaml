@@ -1,1 +1,30 @@
-[]
+- symbol: COHR
+  status: watching
+  added: 2026-04-29
+  thesis_summary: |
+    Optical communications + laser 双轮；AI data-center transceiver demand。
+  themes: [theme_ai_compute, theme_optical_module]
+- symbol: LITE
+  status: watching
+  added: 2026-04-29
+  thesis_summary: |
+    AI data-center optical interconnect 龙头；800G/1.6T upgrade cycle。
+  themes: [theme_ai_compute, theme_optical_module]
+- symbol: MRVL
+  status: watching
+  added: 2026-04-29
+  thesis_summary: |
+    Data-center custom ASIC + optical DSP；AI compute chain。
+  themes: [theme_ai_compute, theme_semiconductor, theme_custom_silicon]
+- symbol: SNDK
+  status: watching
+  added: 2026-04-29
+  thesis_summary: |
+    NAND cycle upturn + AI data-center SSD demand。
+  themes: [theme_ai_compute, theme_storage]
+- symbol: WDC
+  status: watching
+  added: 2026-04-29
+  thesis_summary: |
+    AI data-center HDD demand 与 nearline supply/demand imbalance。
+  themes: [theme_ai_compute, theme_storage]

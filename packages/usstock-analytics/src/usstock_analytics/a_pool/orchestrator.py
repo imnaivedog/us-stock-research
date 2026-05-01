@@ -44,10 +44,59 @@ def load_a_pool_entries(
 
 def calibration_from_mapping(row: dict[str, Any]) -> Calibration:
     return Calibration(
+        rsi14_p5=float(row.get("rsi14_p5") or 25.0),
         rsi14_p20=float(row.get("rsi14_p20") or 30.0),
         rsi14_p80=float(row.get("rsi14_p80") or 70.0),
+        rsi14_p95=float(row.get("rsi14_p95") or 80.0),
         drawdown_p10=float(row.get("drawdown_p10") or -0.20),
     )
+
+
+def _float_or_none(value: Any) -> float | None:
+    if value is None or pd.isna(value):
+        return None
+    return float(value)
+
+
+def _entry_age_days(entry: dict[str, Any], trade_date: date) -> int | None:
+    added = entry.get("added")
+    if added is None:
+        return None
+    if isinstance(added, date):
+        added_date = added
+    else:
+        added_date = date.fromisoformat(str(added))
+    return (trade_date - added_date).days
+
+
+def _days_since_previous_macd_cross(df: pd.DataFrame) -> int | None:
+    crosses: list[date] = []
+    for idx in range(1, len(df)):
+        prev = df.iloc[idx - 1]
+        current = df.iloc[idx]
+        if any(
+            pd.isna(value)
+            for value in (
+                prev.get("macd_line"),
+                prev.get("macd_signal"),
+                current.get("macd_line"),
+                current.get("macd_signal"),
+            )
+        ):
+            continue
+        crossed_up = (
+            prev["macd_line"] <= prev["macd_signal"]
+            and current["macd_line"] > current["macd_signal"]
+        )
+        if crossed_up:
+            crosses.append(pd.to_datetime(current["trade_date"]).date())
+    if not crosses:
+        return None
+    latest_date = pd.to_datetime(df.iloc[-1]["trade_date"]).date()
+    earlier = [cross_date for cross_date in crosses if cross_date < latest_date]
+    if not earlier:
+        return None
+    return (latest_date - earlier[-1]).days
 
 
 def snapshot_from_history(
@@ -64,17 +113,31 @@ def snapshot_from_history(
 ) -> APoolSnapshot:
     df = history.sort_values("trade_date").copy()
     latest = df.iloc[-1]
+    previous = df.iloc[-2] if len(df) >= 2 else latest
     close = float(latest["close"])
     rolling_high = float(pd.to_numeric(df["close"], errors="coerce").tail(60).max())
+    rolling_low_20 = float(pd.to_numeric(df["low"], errors="coerce").tail(20).min())
+    rolling_low_60 = float(pd.to_numeric(df["low"], errors="coerce").tail(60).min())
     mean_20d = float(pd.to_numeric(df["close"], errors="coerce").tail(20).mean())
     std_20d = float(pd.to_numeric(df["close"], errors="coerce").tail(20).std() or 0.0)
+    avg_volume_20d = float(pd.to_numeric(df["volume"], errors="coerce").tail(20).mean() or 0.0)
+    rsi_series = pd.to_numeric(df["rsi_14"], errors="coerce").dropna()
+    latest_trade_date = pd.to_datetime(latest["trade_date"]).date()
     if len(df) > 60:
         ret_60d = (close / float(df.iloc[-61]["close"]) - 1) * 100
     else:
         ret_60d = 0.0
+    recent_b5_support = (
+        rolling_low_20 > 0
+        and close <= rolling_low_20 * 1.03
+        and (
+            (_float_or_none(latest.get("open")) is not None and close > float(latest["open"]))
+            or close > float(previous["close"])
+        )
+    )
     return APoolSnapshot(
         symbol=str(entry["symbol"]),
-        date=pd.to_datetime(latest["trade_date"]).date(),
+        date=latest_trade_date,
         close=close,
         rsi14=float(latest.get("rsi_14") or 50.0),
         drawdown_60d=0.0 if rolling_high <= 0 else close / rolling_high - 1,
@@ -88,6 +151,31 @@ def snapshot_from_history(
         theme_quintile=theme_quintile,
         theme_quintile_prev=theme_quintile_prev,
         theme_bottom_days=theme_bottom_days,
+        open=_float_or_none(latest.get("open")),
+        high=_float_or_none(latest.get("high")),
+        low=_float_or_none(latest.get("low")),
+        prev_close=_float_or_none(previous.get("close")),
+        volume=_float_or_none(latest.get("volume")),
+        avg_volume_20d=avg_volume_20d,
+        sma_20=_float_or_none(latest.get("sma_20")),
+        sma_50=_float_or_none(latest.get("sma_50")),
+        sma_200=_float_or_none(latest.get("sma_200")),
+        prev_sma_20=_float_or_none(previous.get("sma_20")),
+        prev_sma_50=_float_or_none(previous.get("sma_50")),
+        prev_sma_200=_float_or_none(previous.get("sma_200")),
+        macd_line=_float_or_none(latest.get("macd_line")),
+        macd_signal=_float_or_none(latest.get("macd_signal")),
+        prev_macd_line=_float_or_none(previous.get("macd_line")),
+        prev_macd_signal=_float_or_none(previous.get("macd_signal")),
+        days_since_previous_macd_cross=_days_since_previous_macd_cross(df),
+        rolling_high_60=rolling_high,
+        rolling_low_20=rolling_low_20,
+        rolling_low_60=rolling_low_60,
+        max_rsi_60=float(rsi_series.tail(60).max()) if not rsi_series.empty else None,
+        max_volume_60=float(pd.to_numeric(df["volume"], errors="coerce").tail(60).max() or 0.0),
+        rsi14_history=tuple(float(value) for value in rsi_series.tail(3)),
+        thesis_age_days=_entry_age_days(entry, latest_trade_date),
+        recent_b5_support=recent_b5_support,
         days_since_earnings=days_since_earnings,
         post_earnings_drop_pct=post_earnings_drop_pct or 0.0,
         corporate_action_flags=corporate_action_flags or [],
@@ -135,7 +223,9 @@ def load_history(engine: Engine, symbols: list[str], trade_date: date) -> pd.Dat
         return pd.read_sql_query(
             text(
                 """
-                SELECT q.symbol, q.trade_date, q.close, di.rsi_14, di.sma_200
+                SELECT q.symbol, q.trade_date, q.open, q.high, q.low, q.close, q.volume,
+                       di.rsi_14, di.sma_20, di.sma_50, di.sma_200,
+                       di.macd_line, di.macd_signal
                 FROM quotes_daily q
                 LEFT JOIN daily_indicators di
                   ON di.symbol = q.symbol AND di.trade_date = q.trade_date
@@ -158,7 +248,8 @@ def load_symbol_metadata(engine: Engine, symbols: list[str]) -> dict[str, dict[s
             text(
                 """
                 SELECT su.symbol, su.shares_outstanding,
-                       c.rsi14_p20, c.rsi14_p80, c.drawdown_p10
+                       c.rsi14_p5, c.rsi14_p20, c.rsi14_p80, c.rsi14_p95,
+                       c.drawdown_p10
                 FROM symbol_universe su
                 LEFT JOIN a_pool_calibration c ON c.symbol = su.symbol
                 WHERE su.symbol = ANY(:symbols)

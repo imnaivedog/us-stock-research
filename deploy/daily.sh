@@ -13,7 +13,7 @@ cd "${HOME}/us-stock-research"
   uv run --package usstock-data       usstock-data daily        --as-of "$DATE"
   uv run --package usstock-analytics  usstock-analytics themes-score --date "$DATE"
   uv run --package usstock-analytics  usstock-analytics a-pool signals --date "$DATE"
-  uv run --package usstock-analytics  usstock-analytics signals --date "$DATE" --pool m
+  uv run --package usstock-analytics  usstock-analytics signals --date "$DATE"
   uv run --package usstock-reports    usstock-reports daily     --date "$DATE"
   echo "=== usstock daily $DATE end $(date -u -Iseconds) ==="
 } 2>&1 | tee -a "$LOG_FILE"

@@ -3,23 +3,23 @@
 from __future__ import annotations
 
 from usstock_analytics.a_pool.signals.b_signals import (
-    b1_rsi_oversold,
-    b2_drawdown_extreme,
-    b3_below_trendline,
-    b4_post_earnings_pullback,
-    b5_mean_reversion,
+    b1_pullback_confirmed,
+    b2_breakout_volume,
+    b3_rsi_oversold_reversal,
+    b4_macd_golden_cross_fresh,
+    b5_support_bounce,
 )
 from usstock_analytics.a_pool.signals.models import APoolSnapshot, Calibration
 from usstock_analytics.a_pool.signals.s_signals import (
-    s1_target_price,
-    s2a_thesis_break_mcap,
-    s2b_theme_break,
-    s3_overheated,
+    s1_support_breach,
+    s2a_fast_death_cross,
+    s2b_slow_death_cross,
+    s3_price_volume_divergence,
 )
 from usstock_analytics.a_pool.signals.theme_signals import theme_oversold_entry
 from usstock_analytics.a_pool.signals.w_signals import (
-    w1_theme_downgrade,
-    w2_corporate_action_abnormal,
+    w1_rsi_overheated,
+    w2_thesis_aging,
 )
 
 
@@ -36,16 +36,16 @@ def evaluate_signals(
             }
         }
     return {
-        "b1": b1_rsi_oversold(snapshot, calibration),
-        "b2": b2_drawdown_extreme(snapshot, calibration),
-        "b3": b3_below_trendline(snapshot),
-        "b4": b4_post_earnings_pullback(snapshot),
-        "b5": b5_mean_reversion(snapshot),
-        "s1": s1_target_price(snapshot),
-        "s2a": s2a_thesis_break_mcap(snapshot),
-        "s2b": s2b_theme_break(snapshot),
-        "s3": s3_overheated(snapshot, calibration),
-        "w1": w1_theme_downgrade(snapshot),
-        "w2": w2_corporate_action_abnormal(snapshot),
+        "b1": b1_pullback_confirmed(snapshot, calibration),
+        "b2": b2_breakout_volume(snapshot),
+        "b3": b3_rsi_oversold_reversal(snapshot, calibration),
+        "b4": b4_macd_golden_cross_fresh(snapshot),
+        "b5": b5_support_bounce(snapshot),
+        "s1": s1_support_breach(snapshot),
+        "s2a": s2a_fast_death_cross(snapshot),
+        "s2b": s2b_slow_death_cross(snapshot),
+        "s3": s3_price_volume_divergence(snapshot, calibration),
+        "w1": w1_rsi_overheated(snapshot, calibration),
+        "w2": w2_thesis_aging(snapshot),
         "theme_oversold_entry": theme_oversold_entry(snapshot),
     }
