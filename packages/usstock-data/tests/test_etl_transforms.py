@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import date
 
+import httpx
 from loguru import logger
+from usstock_data.etl import earnings_calendar
 from usstock_data.etl.corporate_actions import (
     collect_action_results,
     dividend_rows,
@@ -107,6 +110,24 @@ def test_earnings_calendar_rows_use_events_calendar_shape() -> None:
             "details": {"symbol": "aapl", "date": "2026-05-01", "epsEstimated": 1.2},
         }
     ]
+
+
+def test_earnings_calendar_404_returns_zero(monkeypatch) -> None:
+    class UnavailableFMPClient:
+        async def __aenter__(self) -> UnavailableFMPClient:
+            return self
+
+        async def __aexit__(self, *_exc: object) -> None:
+            return None
+
+        async def get_earnings_calendar(self, _from_date: str, _to_date: str) -> list[dict]:
+            request = httpx.Request("GET", "https://example.test/earning-calendar")
+            response = httpx.Response(404, request=request)
+            raise httpx.HTTPStatusError("not found", request=request, response=response)
+
+    monkeypatch.setattr(earnings_calendar, "FMPClient", UnavailableFMPClient)
+
+    assert asyncio.run(earnings_calendar.run(engine=object(), as_of=date(2026, 4, 29))) == 0
 
 
 def test_shares_outstanding_rows_maps_polygon_response() -> None:

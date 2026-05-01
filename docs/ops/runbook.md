@@ -19,6 +19,8 @@ Codex 只能引用这些环境变量名，不能接触实际值：`DATABASE_URL`
 ## 手动 daily
 
 ```bash
+set -euo pipefail
+
 cd ~/us-stock-research
 
 # normal
@@ -27,6 +29,7 @@ uv run --package usstock-data usstock-data daily
 # idempotent rerun for a date
 uv run --package usstock-data usstock-data daily --as-of 2026-04-29
 uv run --package usstock-analytics usstock-analytics themes-score --date 2026-04-29
+uv run --package usstock-analytics usstock-analytics a-pool signals --date 2026-04-29
 uv run --package usstock-analytics usstock-analytics signals --date 2026-04-29
 uv run --package usstock-reports usstock-reports daily --date 2026-04-29 --no-discord
 ```

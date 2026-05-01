@@ -81,6 +81,8 @@ uv run python -m usstock_data.schema.migrate
 重跑 2026-04-29：
 
 ```bash
+set -euo pipefail
+
 cd ~/us-stock-research
 DATE=2026-04-29
 
@@ -95,7 +97,7 @@ uv run --package usstock-reports usstock-reports daily --date $DATE --no-discord
 
 | 步骤 | 预期结果 |
 | --- | --- |
-| data daily | quotes 约 1784、macro 1、indicators 约 1784、corp/fund best-effort skip |
+| data daily | quotes 约 1784、macro 1、indicators 约 1784；corp/fund/earnings_calendar provider endpoint unavailable 时 best-effort skip |
 | themes-score | `themes_score_daily` 31 行 |
 | a-pool signals | A 池 YAML 为空时 0 行 |
 | m-pool signals | M 信号行数随市场状态变化 |
@@ -148,6 +150,8 @@ Asia/Shanghai 等价：
 ## 最终验收
 
 ```bash
+set -euo pipefail
+
 DATE=2026-04-29
 PG_URL="${DATABASE_URL/postgresql+psycopg:\/\//postgresql:\/\/}"
 

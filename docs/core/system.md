@@ -33,7 +33,7 @@ reports -> analytics -> data
 - data / analytics / reports 三层 CLI 都会通过各自 DB helper 自动读取 repo root `.env`；显式 shell env 优先，不被覆盖。
 - data / analytics / reports 的 `DATABASE_URL` 可写 `postgres://` / `postgresql://`；运行时统一 normalize 为 `postgresql+psycopg://`。
 - 如果 `DATABASE_URL` 只有 username 但缺 password，且 `POSTGRES_PASSWORD` 存在，三层 DB helper 会补 password 后再建 engine。
-- `corporate_actions` / `fundamentals` 是 best-effort ETL；provider tier 类 per-symbol skip 走 DEBUG + INFO 汇总，transient/provider outage 仍保留 ERROR。
+- `corporate_actions` / `fundamentals` / `earnings_calendar` 是 best-effort ETL；provider tier 或 endpoint unavailable 类 skip 不阻塞 daily，transient/provider outage 仍保留 ERROR。
 
 ## 数据流
 

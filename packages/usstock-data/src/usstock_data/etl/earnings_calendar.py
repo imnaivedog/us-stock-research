@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import httpx
+from loguru import logger
 from sqlalchemy.engine import Engine
 
 from usstock_data.db import create_postgres_engine
@@ -40,7 +42,15 @@ async def run(
     if dry_run:
         return 0
     async with FMPClient() as client:
-        payload = await client.get_earnings_calendar(start.isoformat(), end.isoformat())
+        try:
+            payload = await client.get_earnings_calendar(start.isoformat(), end.isoformat())
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                logger.info(
+                    "earnings_calendar skipped: FMP endpoint unavailable status=404"
+                )
+                return 0
+            raise
     with engine.begin() as conn:
         return run_many(
             conn,
