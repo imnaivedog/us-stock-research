@@ -49,3 +49,32 @@ def test_database_url_from_env_normalizes_direct_url(monkeypatch) -> None:
     monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@h/d")
 
     assert db.database_url_from_env() == "postgresql+psycopg://u:p@h/d"
+
+
+def test_database_url_from_env_adds_postgres_password_to_direct_url(monkeypatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", "postgresql://stock_user@127.0.0.1:5432/usstock")
+    monkeypatch.setenv("POSTGRES_PASSWORD", "secret")
+
+    assert (
+        db.database_url_from_env()
+        == "postgresql+psycopg://stock_user:secret@127.0.0.1:5432/usstock"
+    )
+
+
+def test_database_url_from_env_keeps_direct_url_password(monkeypatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", "postgresql://stock_user:direct@127.0.0.1:5432/usstock")
+    monkeypatch.setenv("POSTGRES_PASSWORD", "fallback")
+
+    assert (
+        db.database_url_from_env()
+        == "postgresql+psycopg://stock_user:direct@127.0.0.1:5432/usstock"
+    )
+
+
+def test_prepare_db_url_adds_password_to_explicit_url(monkeypatch) -> None:
+    monkeypatch.setenv("POSTGRES_PASSWORD", "secret")
+
+    assert (
+        db._prepare_db_url("postgresql://stock_user@127.0.0.1:5432/usstock")
+        == "postgresql+psycopg://stock_user:secret@127.0.0.1:5432/usstock"
+    )

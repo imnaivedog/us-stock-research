@@ -32,6 +32,7 @@ reports -> analytics -> data
 - MCP 返回 raw structured data，不做 narrative 包装。
 - CLI 入口经 `usstock_data.db` 自动读取 repo root `.env`；显式 shell env 优先，不被覆盖。
 - `DATABASE_URL` 可写 `postgres://` / `postgresql://`；运行时统一 normalize 为 `postgresql+psycopg://`。
+- 如果 `DATABASE_URL` 只有 username 但缺 password，且 `POSTGRES_PASSWORD` 存在，运行时会补 password 后再建 engine。
 - `corporate_actions` / `fundamentals` 是 best-effort ETL；provider tier 类 per-symbol skip 走 DEBUG + INFO 汇总，transient/provider outage 仍保留 ERROR。
 
 ## 数据流

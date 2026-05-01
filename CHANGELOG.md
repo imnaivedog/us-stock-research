@@ -6,6 +6,7 @@
 
 - `db.py` 自动 `load_dotenv()`，CLI 入口不再依赖 `source .env`（P1）。
 - `db.py` 自动转 `postgres://` / `postgresql://` 到 `postgresql+psycopg://`，兼容用户简洁写法（P2）。
+- `db.py` 在 `DATABASE_URL` 缺 password 且 `POSTGRES_PASSWORD` 存在时自动补齐 password，修 cutover `fe_sendauth: no password supplied`。
 - `ddl.sql` 三阶段重排，修旧表 idempotent migrate 中索引早于补列的问题（P3）。
 - `corporate_actions` / `fundamentals` ETL 对 expected best-effort skip 降噪，普通 per-symbol skip 走 DEBUG + INFO 汇总，transient/provider outage 保留 ERROR（P4）。
 
