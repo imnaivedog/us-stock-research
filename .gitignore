@@ -7,8 +7,10 @@ __pycache__/
 data/snapshots/
 data/bad_rows/
 data/logs/
+logs/
 diagnostic_*/
 cloud-sql-proxy.exe
+.pytest_tmp/
 
 # 临时备份文件
 *.bak.*
