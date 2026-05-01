@@ -72,7 +72,7 @@ Codex 在以下场景必须先在 chat 提案 · 用户确认后再动：
 
 ## 8. 协作模式（V5+1 已定 · 不切）
 
-- **A 模式**: codex 在 Win 本地 `D:\Dev\us-stock-research\` 改代码 · 每 patch 独立 commit 直推 `origin master` · 用户在 LightOS terminal `git pull` + 跑命令
+- **A 模式**: codex 在 Win 本地 `D:\Dev\us-stock-research\` 改代码 · 每 patch 独立 commit 直推 `origin main` · 用户在 LightOS terminal `git pull` + 跑命令
 - **codex 不直接 ssh LightOS**（Win 无 bash/WSL · 凭据安全 · 不可靠）
 - 切 B 模式（codex 全控）需用户明确指令 · 当前阶段不切
 
