@@ -302,7 +302,7 @@ Adjustments：
 
 Notion daily：
 
-- Row properties：date、regime、regime streak、SPY/VIX/macro summary、top themes/stocks、alert count。
+- Row properties 使用固定字段名：`Name`, `Date`, `Dial`, `Regime`, `Position`, `Breadth Score`, `Macro State`, `Alerts`, `Top Sectors`, `Top Themes`, `Top Stocks`, `A Pool Highlights`。
 - Page body：header、macro、L1、L2、L3、ETF top、stock top、A pool highlights、risk notes。
 - 按 ADR-033 排除 simulated NAV 和 simulated positions。
 

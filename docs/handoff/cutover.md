@@ -63,7 +63,7 @@ SQL
 psql "$PG_URL" -c "SELECT trade_date, severity, job_name, category, LEFT(message,80) AS msg FROM alert_log WHERE created_at > NOW() - INTERVAL '2 hours' ORDER BY id DESC LIMIT 20;"
 ```
 
-默认路径：即使诊断噪音较多，也先在本地完成 V5+1 P1-P6，push main/master 后让用户 pull 并重跑。
+默认路径：即使诊断噪音较多，也先在本地完成 V5+1 P1-P6，push main 后让用户 pull 并重跑。
 
 ## V5+1 push 后
 
@@ -71,7 +71,7 @@ psql "$PG_URL" -c "SELECT trade_date, severity, job_name, category, LEFT(message
 
 ```bash
 cd ~/us-stock-research
-git pull origin master
+git pull origin main
 uv sync
 
 # P1/P2/P3 验证：无需 source .env，且 migrate 幂等。
@@ -87,7 +87,7 @@ DATE=2026-04-29
 uv run --package usstock-data usstock-data daily --as-of $DATE
 uv run --package usstock-analytics usstock-analytics themes-score --date $DATE
 uv run --package usstock-analytics usstock-analytics a-pool signals --date $DATE
-uv run --package usstock-analytics usstock-analytics signals --date $DATE --pool m
+uv run --package usstock-analytics usstock-analytics signals --date $DATE
 uv run --package usstock-reports usstock-reports daily --date $DATE --no-discord
 ```
 
@@ -100,6 +100,23 @@ uv run --package usstock-reports usstock-reports daily --date $DATE --no-discord
 | a-pool signals | A 池 YAML 为空时 0 行 |
 | m-pool signals | M 信号行数随市场状态变化 |
 | reports | Notion daily row + page；使用 `--no-discord` 时不发 Discord |
+
+Notion daily database 至少需要以下属性，名称必须完全一致：
+
+| Property | Type |
+| --- | --- |
+| `Name` | title |
+| `Date` | date |
+| `Dial` | select |
+| `Regime` | select |
+| `Position` | number |
+| `Breadth Score` | number |
+| `Macro State` | select |
+| `Alerts` | number |
+| `Top Sectors` | rich_text |
+| `Top Themes` | rich_text |
+| `Top Stocks` | rich_text |
+| `A Pool Highlights` | number |
 
 ## cron 部署
 
@@ -142,7 +159,7 @@ psql "$PG_URL" <<'SQL'
 SELECT 'quotes_daily' AS tbl, COUNT(*) FROM quotes_daily WHERE trade_date='2026-04-29'
 UNION ALL SELECT 'macro_daily', COUNT(*) FROM macro_daily WHERE trade_date='2026-04-29'
 UNION ALL SELECT 'daily_indicators', COUNT(*) FROM daily_indicators WHERE trade_date='2026-04-29'
-UNION ALL SELECT 'm_signals_daily', COUNT(*) FROM m_signals_daily WHERE trade_date='2026-04-29'
+UNION ALL SELECT 'signals_daily', COUNT(*) FROM signals_daily WHERE trade_date='2026-04-29'
 ORDER BY tbl;
 SQL
 ```
